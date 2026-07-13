@@ -14,6 +14,7 @@ export default class GameScene extends Phaser.Scene {
     this.ballsRemaining = SESSION.ballsPerSession;
     this.ballInPlay = false;
 
+    this.createBackground();
     createPegField(this);
     this.createSlots();
     this.createFloor();
@@ -38,6 +39,13 @@ export default class GameScene extends Phaser.Scene {
   pauseGame() {
     this.scene.pause();
     this.scene.launch('PauseScene');
+  }
+
+  // ponytail: test background image, remove (along with the tmp-bg.webp asset) once real art is in
+  createBackground() {
+    const bg = this.add.image(BOARD_WIDTH / 2, BOARD_HEIGHT / 2, 'tmp_bg');
+    const scale = Math.max(BOARD_WIDTH / bg.width, BOARD_HEIGHT / bg.height);
+    bg.setScale(scale);
   }
 
   createSlots() {
