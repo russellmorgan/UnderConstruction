@@ -1,15 +1,22 @@
 import Phaser from 'phaser';
 import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS } from './config/gameConfig.js';
 import BootScene from './scenes/BootScene.js';
+import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
+import ResultsScene from './scenes/ResultsScene.js';
+import PauseScene from './scenes/PauseScene.js';
 
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'app',
-  width: BOARD_WIDTH,
-  height: BOARD_HEIGHT,
   backgroundColor: '#1a1a2e',
   disableVisibilityChange: true,
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: BOARD_WIDTH,
+    height: BOARD_HEIGHT,
+  },
   physics: {
     default: 'matter',
     matter: {
@@ -17,5 +24,5 @@ new Phaser.Game({
       debug: false,
     },
   },
-  scene: [BootScene, GameScene],
+  scene: [BootScene, MenuScene, GameScene, ResultsScene, PauseScene],
 });

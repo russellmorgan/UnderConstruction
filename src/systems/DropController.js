@@ -32,6 +32,7 @@ export default class DropController {
     if (!this.enabled) return;
     this.x = this.clamp(pointer.x);
     this.indicator.x = this.x;
+    this.scene.sound.play('laser_shoot');
     this.onDrop(this.x);
   }
 

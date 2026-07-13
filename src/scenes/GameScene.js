@@ -32,15 +32,12 @@ export default class GameScene extends Phaser.Scene {
 
     this.matter.world.on('collisionstart', (event) => this.handleCollisions(event));
 
-    this.endText = this.add
-      .text(BOARD_WIDTH / 2, BOARD_HEIGHT / 2, '', {
-        fontFamily: 'monospace',
-        fontSize: '28px',
-        color: '#ffffff',
-        align: 'center',
-      })
-      .setOrigin(0.5)
-      .setVisible(false);
+    this.input.keyboard.on('keydown-ESC', () => this.pauseGame());
+  }
+
+  pauseGame() {
+    this.scene.pause();
+    this.scene.launch('PauseScene');
   }
 
   createSlots() {
@@ -105,7 +102,10 @@ export default class GameScene extends Phaser.Scene {
       if (!ballBody || ballBody.gameObject !== this.currentBall) continue;
 
       const otherBody = ballBody === bodyA ? bodyB : bodyA;
-      if (otherBody.label?.startsWith('slot-')) {
+      if (otherBody.label === 'peg') {
+        this.sound.play('hit_hurt');
+      } else if (otherBody.label?.startsWith('slot-')) {
+        this.sound.play('pickup_coin');
         this.resolveDrop(Number(otherBody.label.split('-')[1]));
       } else if (otherBody.label === 'floor') {
         this.resolveDrop(0);
@@ -136,13 +136,6 @@ export default class GameScene extends Phaser.Scene {
 
   endSession() {
     this.dropController.setEnabled(false);
-    this.endText
-      .setText(`Session over\nFinal score: ${this.scoreManager.score}\n\nClick to play again`)
-      .setVisible(true);
-    this.input.once('pointerup', () => this.restart());
-  }
-
-  restart() {
-    this.scene.restart();
+    this.scene.start('ResultsScene', { score: this.scoreManager.score });
   }
 }

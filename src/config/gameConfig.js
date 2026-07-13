@@ -32,3 +32,5 @@ export const NARRATOR = {
 export const SESSION = {
   ballsPerSession: 10,
 };
+
+export const STORAGE_KEY = 'under-construction:highScore';
