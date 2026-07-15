@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS, SLOTS, SESSION } from '../config/gameConfig.js';
+import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS, SLOTS, SESSION, JUICE, COMBO } from '../config/gameConfig.js';
 import { createPegField } from '../systems/PegField.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
+import ComboManager from '../systems/ComboManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
+import AudioFeedback from '../systems/AudioFeedback.js';
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
@@ -14,20 +16,29 @@ export default class GameScene extends Phaser.Scene {
     this.ballsRemaining = SESSION.ballsPerSession;
     this.ballInPlay = false;
 
-    this.createBackground();
     createPegField(this);
     this.createSlots();
     this.createFloor();
     this.createWalls();
 
     this.scoreManager = new ScoreManager(this, 10, BOARD_HEIGHT - 30);
+    this.comboManager = new ComboManager(this, 10, BOARD_HEIGHT - 55);
     this.narrator = new NarratorSystem(this, 10, 45, BOARD_WIDTH - 20);
+    this.audioFeedback = new AudioFeedback();
     this.ballsText = this.add.text(BOARD_WIDTH - 140, BOARD_HEIGHT - 30, '', {
       fontFamily: 'monospace',
       fontSize: '20px',
       color: '#ffffff',
     });
     this.updateBallsText();
+
+    this.createParticleTexture();
+    this.scoreParticles = this.add.particles(0, 0, 'particleDot', {
+      lifespan: 400,
+      speed: { min: 60, max: 180 },
+      scale: { start: 1, end: 0 },
+      emitting: false,
+    });
 
     this.dropController = new DropController(this, (x) => this.spawnBall(x));
 
@@ -41,19 +52,16 @@ export default class GameScene extends Phaser.Scene {
     this.scene.launch('PauseScene');
   }
 
-  // ponytail: test background image, remove (along with the tmp-bg.webp asset) once real art is in
-  createBackground() {
-    const bg = this.add.image(BOARD_WIDTH / 2, BOARD_HEIGHT / 2, 'tmp_bg');
-    const scale = Math.max(BOARD_WIDTH / bg.width, BOARD_HEIGHT / bg.height);
-    bg.setScale(scale);
-  }
-
   createSlots() {
-    const { height, values } = SLOTS;
-    const slotWidth = BOARD_WIDTH / values.length;
+    const { height, zones } = SLOTS;
+    const slotWidth = BOARD_WIDTH / zones.length;
     const y = BOARD_HEIGHT - height / 2 - 50;
 
-    values.forEach((value, i) => {
+    this.slotBounds = [];
+    let maxValue = -Infinity;
+    let maxZoneIndex = -1;
+
+    zones.forEach(({ value, comboQualifies }, i) => {
       const x = slotWidth * i + slotWidth / 2;
       const zone = this.add.rectangle(x, y, slotWidth - 2, height, 0x2a2a4a).setStrokeStyle(1, 0x555577);
       this.add
@@ -65,7 +73,17 @@ export default class GameScene extends Phaser.Scene {
         isSensor: true,
         label: `slot-${value}`,
       });
+      zone.setData('comboQualifies', comboQualifies);
+
+      const left = slotWidth * i;
+      this.slotBounds.push({ left, right: left + slotWidth });
+      if (value > maxValue) {
+        maxValue = value;
+        maxZoneIndex = i;
+      }
     });
+
+    this.topZoneIndex = maxZoneIndex;
   }
 
   // Safety net: catches a ball that reaches the bottom without ever registering
@@ -111,18 +129,66 @@ export default class GameScene extends Phaser.Scene {
 
       const otherBody = ballBody === bodyA ? bodyB : bodyA;
       if (otherBody.label === 'peg') {
-        this.sound.play('hit_hurt');
+        this.audioFeedback.pegHit();
+        this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
       } else if (otherBody.label?.startsWith('slot-')) {
-        this.sound.play('pickup_coin');
-        this.resolveDrop(Number(otherBody.label.split('-')[1]));
+        this.checkNearMiss(ballBody.gameObject.x);
+        this.resolveDrop(Number(otherBody.label.split('-')[1]), otherBody.gameObject.getData('comboQualifies'));
       } else if (otherBody.label === 'floor') {
-        this.resolveDrop(0);
+        this.resolveDrop(0, false);
       }
     }
   }
 
-  resolveDrop(points) {
-    this.scoreManager.add(points);
+  // Flags a "so close" moment when the ball lands one zone away from the top-value
+  // zone but crossed close to that zone's boundary — not a precise trajectory check,
+  // just a landing-x heuristic to keep the geometry simple.
+  checkNearMiss(landingX) {
+    const topBounds = this.slotBounds[this.topZoneIndex];
+    const nearLeftEdge = Math.abs(landingX - topBounds.left) <= JUICE.nearMissMargin;
+    const nearRightEdge = Math.abs(landingX - topBounds.right) <= JUICE.nearMissMargin;
+    if ((nearLeftEdge || nearRightEdge) && (landingX < topBounds.left || landingX > topBounds.right)) {
+      this.narrator.show('So close!');
+    }
+  }
+
+  createParticleTexture() {
+    const g = this.make.graphics({ x: 0, y: 0, add: false });
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(4, 4, 4);
+    g.generateTexture('particleDot', 8, 8);
+    g.destroy();
+  }
+
+  spawnScoreBurst(x, y, multiplier) {
+    const { baseCount, countPerMultiplier, baseColor, hotColor } = JUICE.particle;
+    const count = Math.round(baseCount + countPerMultiplier * (multiplier - 1));
+    const heat = (multiplier - 1) / (COMBO.max - 1);
+    const color = Phaser.Display.Color.Interpolate.ColorWithColor(
+      Phaser.Display.Color.ValueToColor(baseColor),
+      Phaser.Display.Color.ValueToColor(hotColor),
+      1,
+      heat
+    );
+    this.scoreParticles.setParticleTint(color.color);
+    this.scoreParticles.explode(count, x, y);
+  }
+
+  resolveDrop(points, qualifies) {
+    const { appliedMultiplier, broke } = this.comboManager.registerLanding(qualifies);
+    const awarded = Math.round(points * appliedMultiplier);
+    this.scoreManager.add(awarded);
+
+    if (points > 0) {
+      this.spawnScoreBurst(this.currentBall.x, this.currentBall.y, appliedMultiplier);
+      this.cameras.main.shake(JUICE.shake.score.duration, JUICE.shake.score.intensity * appliedMultiplier);
+      this.audioFeedback.scoreHit(Math.round((appliedMultiplier - 1) / COMBO.step));
+    }
+    if (broke) {
+      this.cameras.main.flash(JUICE.comboBreakFlash.duration, ...JUICE.comboBreakFlash.color);
+      this.audioFeedback.comboBreak();
+    }
+
     this.currentBall.destroy();
     this.currentBall = null;
     this.ballInPlay = false;

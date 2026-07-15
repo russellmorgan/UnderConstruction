@@ -38,3 +38,12 @@ Guardrails:
 
 - Exact score threshold for "bad" trigger pool — set from playtest data, not upfront.
 - Global cumulative threshold vs. rolling recent-performance window — default to cumulative, revisit only if playtesting shows mistimed comments.
+
+## Phase 3 — Combo & juice pass
+
+1. ✅ **Combo/multiplier system** — each slot in `SLOTS.zones` (`gameConfig.js`) carries `comboQualifies` (1000/5000 zones qualify, 100/500/gutter don't). `ComboManager` tracks a session multiplier starting at 1x, +0.5x per consecutive qualifying landing, capped at 3x, hard reset to 1x on any non-qualifying landing (including the floor). The multiplier applied to a landing is the value in effect *before* that landing's own increment/reset, so the first qualifying hit scores at 1x and the streak compounds from there. Displayed live next to the score.
+2. ✅ **Visual juice** — `cameras.main.shake` on every peg hit (subtle) and every scoring landing (stronger, scaled by the applied multiplier). Particle burst on scoring landings via `this.add.particles` with a Graphics-drawn dot texture, burst size and color (cyan → yellow) both scaling with multiplier. Combo break triggers a red `cameras.main.flash`.
+3. ✅ **Procedural audio** — `src/systems/AudioFeedback.js` is a standalone Web Audio oscillator module (no audio files): light blip on peg hits, chime on scoring with pitch rising per combo step, distinct low tone on combo break. Replaces the old `hit_hurt`/`pickup_coin` wav calls in `GameScene`; isolated so it can be swapped for real SFX later without touching game logic.
+4. ✅ **Near-miss highlight** — landing-x heuristic in `GameScene.checkNearMiss`: if the ball lands just outside the top-value zone's boundary (within `JUICE.nearMissMargin`), the narrator text flashes "So close!". Approximate by design (landing position, not full trajectory) to keep the geometry simple.
+
+Verified manually in-browser: multiplier climbs 1.0x → 1.5x → 2.0x across consecutive qualifying drops, score reflects the multiplied award each time, and a gutter landing applies the pre-reset multiplier then hard-resets the combo to 1.0x.
