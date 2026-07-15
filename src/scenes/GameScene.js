@@ -219,14 +219,15 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  // Reuses the existing juice-pass hooks (flash, particle burst, procedural tone) tinted
-  // green rather than building a separate bonus-ball feedback system.
+  // Reuses the existing juice-pass hooks (flash, particle burst) tinted green, plus a
+  // narrator callout and the real "Powerup 5" cue, rather than a separate feedback system.
   awardBonusBalls(count, x, y) {
     this.ballsRemaining += count;
     this.cameras.main.flash(JUICE.bonusFlash.duration, ...JUICE.bonusFlash.color);
     this.scoreParticles.setParticleTint(Phaser.Display.Color.GetColor(...JUICE.bonusFlash.color));
     this.scoreParticles.explode(JUICE.bonusParticleCount * count, x, y);
-    this.audioFeedback.bonusBall();
+    this.sound.play('powerup_5');
+    this.narrator.show('Free ball!');
   }
 
   updateBallsText() {

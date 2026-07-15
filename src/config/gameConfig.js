@@ -5,7 +5,7 @@ export const BOARD_HEIGHT = 720;
 
 export const PHYSICS = {
   gravityY: 1,
-  ball: { radius: 8, restitution: 0.65, friction: 0.01, frictionStatic: 0 },
+  ball: { radius: 8, restitution: 0.85, friction: 0.01, frictionStatic: 0 },
   // frictionStatic: 0 keeps a slow-moving ball from pinning in the notch between two pegs.
   peg: { radius: 6, restitution: 0.7, friction: 0, frictionStatic: 0 },
 };
