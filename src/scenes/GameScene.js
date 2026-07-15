@@ -4,6 +4,7 @@ import { createPegField } from '../systems/PegField.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
 import ComboManager from '../systems/ComboManager.js';
+import BonusBallManager from '../systems/BonusBallManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
 import AudioFeedback from '../systems/AudioFeedback.js';
 
@@ -23,6 +24,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.scoreManager = new ScoreManager(this, 10, BOARD_HEIGHT - 30);
     this.comboManager = new ComboManager(this, 10, BOARD_HEIGHT - 55);
+    this.bonusBalls = new BonusBallManager();
     this.narrator = new NarratorSystem(this, 10, 45, BOARD_WIDTH - 20);
     this.audioFeedback = new AudioFeedback();
     this.ballsText = this.add.text(BOARD_WIDTH - 140, BOARD_HEIGHT - 30, '', {
@@ -61,7 +63,7 @@ export default class GameScene extends Phaser.Scene {
     let maxValue = -Infinity;
     let maxZoneIndex = -1;
 
-    zones.forEach(({ value, comboQualifies }, i) => {
+    zones.forEach(({ value, comboQualifies, grantsBonusBall }, i) => {
       const x = slotWidth * i + slotWidth / 2;
       const zone = this.add.rectangle(x, y, slotWidth - 2, height, 0x2a2a4a).setStrokeStyle(1, 0x555577);
       this.add
@@ -74,6 +76,7 @@ export default class GameScene extends Phaser.Scene {
         label: `slot-${value}`,
       });
       zone.setData('comboQualifies', comboQualifies);
+      zone.setData('grantsBonusBall', grantsBonusBall);
 
       const left = slotWidth * i;
       this.slotBounds.push({ left, right: left + slotWidth });
@@ -133,9 +136,13 @@ export default class GameScene extends Phaser.Scene {
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
       } else if (otherBody.label?.startsWith('slot-')) {
         this.checkNearMiss(ballBody.gameObject.x);
-        this.resolveDrop(Number(otherBody.label.split('-')[1]), otherBody.gameObject.getData('comboQualifies'));
+        this.resolveDrop(
+          Number(otherBody.label.split('-')[1]),
+          otherBody.gameObject.getData('comboQualifies'),
+          otherBody.gameObject.getData('grantsBonusBall')
+        );
       } else if (otherBody.label === 'floor') {
-        this.resolveDrop(0, false);
+        this.resolveDrop(0, false, false);
       }
     }
   }
@@ -174,7 +181,7 @@ export default class GameScene extends Phaser.Scene {
     this.scoreParticles.explode(count, x, y);
   }
 
-  resolveDrop(points, qualifies) {
+  resolveDrop(points, qualifies, grantsBonusBall) {
     const { appliedMultiplier, broke } = this.comboManager.registerLanding(qualifies);
     const awarded = Math.round(points * appliedMultiplier);
     this.scoreManager.add(awarded);
@@ -187,6 +194,14 @@ export default class GameScene extends Phaser.Scene {
     if (broke) {
       this.cameras.main.flash(JUICE.comboBreakFlash.duration, ...JUICE.comboBreakFlash.color);
       this.audioFeedback.comboBreak();
+    }
+
+    const bonusCount =
+      this.bonusBalls.evaluateZone(grantsBonusBall) +
+      this.bonusBalls.evaluateScoreThreshold(this.scoreManager.score) +
+      this.bonusBalls.evaluateComboMilestone(this.comboManager.multiplier);
+    if (bonusCount > 0) {
+      this.awardBonusBalls(bonusCount, this.currentBall.x, this.currentBall.y);
     }
 
     this.currentBall.destroy();
@@ -202,6 +217,16 @@ export default class GameScene extends Phaser.Scene {
     } else {
       this.dropController.setEnabled(true);
     }
+  }
+
+  // Reuses the existing juice-pass hooks (flash, particle burst, procedural tone) tinted
+  // green rather than building a separate bonus-ball feedback system.
+  awardBonusBalls(count, x, y) {
+    this.ballsRemaining += count;
+    this.cameras.main.flash(JUICE.bonusFlash.duration, ...JUICE.bonusFlash.color);
+    this.scoreParticles.setParticleTint(Phaser.Display.Color.GetColor(...JUICE.bonusFlash.color));
+    this.scoreParticles.explode(JUICE.bonusParticleCount * count, x, y);
+    this.audioFeedback.bonusBall();
   }
 
   updateBallsText() {

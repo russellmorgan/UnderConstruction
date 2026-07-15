@@ -47,3 +47,14 @@ Guardrails:
 4. ✅ **Near-miss highlight** — landing-x heuristic in `GameScene.checkNearMiss`: if the ball lands just outside the top-value zone's boundary (within `JUICE.nearMissMargin`), the narrator text flashes "So close!". Approximate by design (landing position, not full trajectory) to keep the geometry simple.
 
 Verified manually in-browser: multiplier climbs 1.0x → 1.5x → 2.0x across consecutive qualifying drops, score reflects the multiplied award each time, and a gutter landing applies the pre-reset multiplier then hard-resets the combo to 1.0x.
+
+## Phase 4 — Bonus balls / extended sessions
+
+1. ✅ **Three bonus-ball sources, +1 ball each** — `src/systems/BonusBallManager.js` tracks all three against one shared session pool:
+   - **Zone**: the two outer edge slots in `SLOTS.zones` carry `grantsBonusBall: true` — lowest-probability landings on a Galton-board-shaped distribution, so a bonus there feels earned. Both edges are otherwise the lowest-value (100) zones, giving them a second purpose.
+   - **Score threshold**: `BONUS_BALLS.scoreInterval` (500). `evaluateScoreThreshold` computes `floor(score / interval)` each landing and awards one ball per newly-crossed multiple, so a single big combo-multiplied hit that jumps several thresholds at once is credited for all of them, not just one.
+   - **Combo milestone**: `BONUS_BALLS.comboTier` (3x). `evaluateComboMilestone` fires once ever per session via a `comboMilestoneAwarded` flag that's set permanently on first reach — a later reset-and-rebuild to 3x can't re-trigger it, closing the farmable loop.
+2. ✅ **Session cap** — `BONUS_BALLS.maxPerSession` (5). All three sources decrement the same `awardedCount`, checked before every award, so any combination hitting the cap in a single landing (or across the session) never exceeds it.
+3. ✅ **UI/feedback** — bonus balls add directly to `ballsRemaining`, reflected immediately in the existing `Balls: N` text. `GameScene.awardBonusBalls` reuses the Phase 3 juice hooks tinted green — camera flash, a scaled particle burst, and a new `AudioFeedback.bonusBall()` procedural tone — rather than building a separate feedback system.
+
+Verified with a deterministic Node script exercising `BonusBallManager` directly (bypassing the sandbox's throttled physics rendering): each source awards exactly one ball per qualifying event; the combo milestone fires once and stays silent on a later re-hit of the tier in the same session; a score jump from 0→1700 correctly awards 3 balls for 3 newly-crossed thresholds in one call; and a combined zone+threshold+milestone event that would otherwise total more than the cap is clipped to exactly `maxPerSession`, with the milestone flag still marked so it can't retry later. Confirmed in-browser that the scene boots, the board renders, and a peg collision runs the full audio/shake pipeline with no console errors.

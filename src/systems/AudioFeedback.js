@@ -40,4 +40,8 @@ export default class AudioFeedback {
   comboBreak() {
     this.tone(180, 0.3, { type: 'sawtooth', gain: 0.15 });
   }
+
+  bonusBall() {
+    this.tone(920, 0.22, { type: 'triangle', gain: 0.2 });
+  }
 }

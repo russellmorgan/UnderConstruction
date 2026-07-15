@@ -21,14 +21,16 @@ export const PEG_FIELD = {
 export const SLOTS = {
   height: 60,
   // comboQualifies: true only for the higher-value zones — landing in a gutter/low zone breaks the streak.
+  // grantsBonusBall: the outer edge zones — lowest-probability landings on a Galton-board-shaped
+  // distribution funneling toward center — so a bonus ball there feels earned, not free.
   zones: [
-    { value: 100, comboQualifies: false },
-    { value: 500, comboQualifies: false },
-    { value: 1000, comboQualifies: true },
-    { value: 5000, comboQualifies: true },
-    { value: 1000, comboQualifies: true },
-    { value: 500, comboQualifies: false },
-    { value: 100, comboQualifies: false },
+    { value: 100, comboQualifies: false, grantsBonusBall: true },
+    { value: 500, comboQualifies: false, grantsBonusBall: false },
+    { value: 1000, comboQualifies: true, grantsBonusBall: false },
+    { value: 5000, comboQualifies: true, grantsBonusBall: false },
+    { value: 1000, comboQualifies: true, grantsBonusBall: false },
+    { value: 500, comboQualifies: false, grantsBonusBall: false },
+    { value: 100, comboQualifies: false, grantsBonusBall: true },
   ],
 };
 
@@ -50,6 +52,14 @@ export const JUICE = {
   },
   comboBreakFlash: { duration: 180, color: [255, 60, 60] },
   nearMissMargin: 14, // px from the top-zone boundary that still counts as "so close"
+  bonusFlash: { duration: 150, color: [80, 255, 140] },
+  bonusParticleCount: 14,
+};
+
+export const BONUS_BALLS = {
+  scoreInterval: 500,
+  comboTier: 3,
+  maxPerSession: 5,
 };
 
 export const NARRATOR = {
