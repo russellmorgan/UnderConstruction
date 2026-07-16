@@ -132,6 +132,7 @@ export default class GameScene extends Phaser.Scene {
 
       const otherBody = ballBody === bodyA ? bodyB : bodyA;
       if (otherBody.label === 'peg') {
+        this.scoreManager.add(1);
         this.audioFeedback.pegHit();
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
       } else if (otherBody.label?.startsWith('slot-')) {

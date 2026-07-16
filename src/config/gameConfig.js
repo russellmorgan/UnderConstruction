@@ -10,12 +10,28 @@ export const PHYSICS = {
   peg: { radius: 6, restitution: 0.7, friction: 0, frictionStatic: 0 },
 };
 
+const PEG_JITTER = 5;
+const PEG_RADIUS_RANGE = [4, 7];
+// Worst case for two neighboring pegs: both at max radius, jittered toward each other.
+// Spacing is derived so that case still leaves room for the ball (plus a margin) to pass through,
+// so this stays correct if PHYSICS.ball.radius or the peg radius/jitter tuning above changes.
+const PEG_CLEARANCE_MARGIN = 4;
+const PEG_MIN_SPACING_X =
+  PEG_JITTER * 2 + PEG_RADIUS_RANGE[1] * 2 + PHYSICS.ball.radius * 2 + PEG_CLEARANCE_MARGIN;
+
 export const PEG_FIELD = {
-  rows: 8,
-  spacingX: 40,
+  rows: 11,
+  spacingX: PEG_MIN_SPACING_X,
   spacingY: 40,
   topMargin: 140,
   sideMargin: 30,
+  // Per-peg randomization: position jitter (px), radius range, and restitution range.
+  // Restitution is colored on a cold->hot gradient so players can read bounciness at a glance.
+  jitter: PEG_JITTER,
+  radiusRange: PEG_RADIUS_RANGE,
+  restitutionRange: [0.4, 1.0],
+  coldColor: 0x3355ff,
+  hotColor: 0xff3355,
 };
 
 export const SLOTS = {

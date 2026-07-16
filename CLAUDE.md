@@ -14,7 +14,7 @@ npm run build      # production build to dist/
 npm run preview    # preview the production build
 ```
 
-There is no test suite, linter, or type checker configured in this repo.
+There is no test suite, linter, or type checker configured in this repo. Test functionality when possible but defer to user to test systems that rely on physics system as those are difficult to observe.
 
 ## Deployment
 
