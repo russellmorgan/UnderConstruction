@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS, SLOTS, SESSION, JUICE, COMBO } from '../config/gameConfig.js';
+import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS, SLOTS, SESSION, JUICE, COMBO, PEG_TRANSITION } from '../config/gameConfig.js';
 import { createPegField } from '../systems/PegField.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
@@ -42,6 +42,15 @@ export default class GameScene extends Phaser.Scene {
       emitting: false,
     });
 
+    this.trailEmitter = this.add.particles(0, 0, 'particleDot', {
+      lifespan: JUICE.trail.lifespan,
+      speed: { min: 0, max: 0 },
+      scale: { start: JUICE.trail.scale, end: 0 },
+      alpha: { start: JUICE.trail.alpha, end: 0 },
+      tint: 0xffe14d,
+      emitting: false,
+    });
+
     this.dropController = new DropController(this, (x) => this.spawnBall(x));
 
     this.matter.world.on('collisionstart', (event) => this.handleCollisions(event));
@@ -55,8 +64,9 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createSlots() {
-    const { height, zones } = SLOTS;
-    const slotWidth = BOARD_WIDTH / zones.length;
+    const { height, zones, slotGap } = SLOTS;
+    const totalGaps = zones.length + 1;
+    const zoneWidth = (BOARD_WIDTH - slotGap * totalGaps) / zones.length;
     const y = BOARD_HEIGHT - height / 2 - 50;
 
     this.slotBounds = [];
@@ -64,8 +74,8 @@ export default class GameScene extends Phaser.Scene {
     let maxZoneIndex = -1;
 
     zones.forEach(({ value, comboQualifies, grantsBonusBall }, i) => {
-      const x = slotWidth * i + slotWidth / 2;
-      const zone = this.add.rectangle(x, y, slotWidth - 2, height, 0x2a2a4a).setStrokeStyle(1, 0x555577);
+      const x = slotGap + i * (zoneWidth + slotGap) + zoneWidth / 2;
+      const zone = this.add.rectangle(x, y, zoneWidth, height, 0x2a2a4a).setStrokeStyle(1, 0x555577);
       this.add
         .text(x, y, String(value), { fontFamily: 'monospace', fontSize: '14px', color: '#ffffff' })
         .setOrigin(0.5);
@@ -78,8 +88,8 @@ export default class GameScene extends Phaser.Scene {
       zone.setData('comboQualifies', comboQualifies);
       zone.setData('grantsBonusBall', grantsBonusBall);
 
-      const left = slotWidth * i;
-      this.slotBounds.push({ left, right: left + slotWidth });
+      const left = slotGap + i * (zoneWidth + slotGap);
+      this.slotBounds.push({ left, right: left + zoneWidth });
       if (value > maxValue) {
         maxValue = value;
         maxZoneIndex = i;
@@ -101,8 +111,8 @@ export default class GameScene extends Phaser.Scene {
     const wallThickness = 10;
     const left = this.add.rectangle(-wallThickness / 2, BOARD_HEIGHT / 2, wallThickness, BOARD_HEIGHT, 0x000000, 0);
     const right = this.add.rectangle(BOARD_WIDTH + wallThickness / 2, BOARD_HEIGHT / 2, wallThickness, BOARD_HEIGHT, 0x000000, 0);
-    this.matter.add.gameObject(left, { isStatic: true, label: 'wall' });
-    this.matter.add.gameObject(right, { isStatic: true, label: 'wall' });
+    this.matter.add.gameObject(left, { isStatic: true, restitution: PHYSICS.wall.restitution, friction: PHYSICS.wall.friction, frictionStatic: PHYSICS.wall.frictionStatic, label: 'wall' });
+    this.matter.add.gameObject(right, { isStatic: true, restitution: PHYSICS.wall.restitution, friction: PHYSICS.wall.friction, frictionStatic: PHYSICS.wall.frictionStatic, label: 'wall' });
   }
 
   spawnBall(x) {
@@ -111,7 +121,7 @@ export default class GameScene extends Phaser.Scene {
     this.ballInPlay = true;
     this.dropController.setEnabled(false);
 
-    const ball = this.add.circle(x, 10, PHYSICS.ball.radius, 0xff5d8f);
+    const ball = this.add.circle(x, 10, PHYSICS.ball.radius, 0xffe14d);
     this.matter.add.gameObject(ball, {
       restitution: PHYSICS.ball.restitution,
       friction: PHYSICS.ball.friction,
@@ -142,9 +152,19 @@ export default class GameScene extends Phaser.Scene {
           otherBody.gameObject.getData('comboQualifies'),
           otherBody.gameObject.getData('grantsBonusBall')
         );
+      } else if (otherBody.label === 'wall') {
+        const centerX = BOARD_WIDTH / 2;
+        const direction = ballBody.position.x < centerX ? 1 : -1;
+        ballBody.gameObject.setVelocityX(direction * JUICE.wallBounceImpulse);
       } else if (otherBody.label === 'floor') {
         this.resolveDrop(0, false, false);
       }
+    }
+  }
+
+  update() {
+    if (this.currentBall) {
+      this.trailEmitter.emitParticleAt(this.currentBall.x, this.currentBall.y, 1);
     }
   }
 
@@ -193,7 +213,6 @@ export default class GameScene extends Phaser.Scene {
       this.audioFeedback.scoreHit(Math.round((appliedMultiplier - 1) / COMBO.step));
     }
     if (broke) {
-      this.cameras.main.flash(JUICE.comboBreakFlash.duration, ...JUICE.comboBreakFlash.color);
       this.audioFeedback.comboBreak();
     }
 
@@ -209,37 +228,63 @@ export default class GameScene extends Phaser.Scene {
     this.currentBall = null;
     this.ballInPlay = false;
 
-    this.randomizePegs();
-
     this.ballsRemaining--;
     this.updateBallsText();
     this.narrator.onDrop(this.scoreManager.score);
 
-    if (this.ballsRemaining <= 0) {
-      this.endSession();
-    } else {
-      this.dropController.setEnabled(true);
-    }
+    this.randomizePegs(() => {
+      if (this.ballsRemaining <= 0) {
+        this.endSession();
+      } else {
+        this.dropController.setEnabled(true);
+      }
+    });
   }
 
   // Reuses the existing juice-pass hooks (flash, particle burst) tinted green, plus a
   // narrator callout and the real "Powerup 5" cue, rather than a separate feedback system.
   awardBonusBalls(count, x, y) {
     this.ballsRemaining += count;
-    this.cameras.main.flash(JUICE.bonusFlash.duration, ...JUICE.bonusFlash.color);
     this.scoreParticles.setParticleTint(Phaser.Display.Color.GetColor(...JUICE.bonusFlash.color));
     this.scoreParticles.explode(JUICE.bonusParticleCount * count, x, y);
     this.sound.play('powerup_5');
-    this.narrator.show('Free ball!');
+    this.narrator.show('Free ball!', false, true);
   }
 
   updateBallsText() {
     this.ballsText.setText(`Balls: ${this.ballsRemaining}`);
   }
 
-  randomizePegs() {
-    this.pegs.forEach(peg => peg.destroy());
-    this.pegs = createPegField(this);
+  randomizePegs(onComplete) {
+    const shuffled = Phaser.Utils.Array.Shuffle([...this.pegs]);
+    const { pegFadeDuration, staggerPerPeg } = PEG_TRANSITION;
+    let completed = 0;
+    const total = shuffled.length;
+
+    if (total === 0) {
+      this.pegs = createPegField(this);
+      if (onComplete) onComplete();
+      return;
+    }
+
+    shuffled.forEach((peg, i) => {
+      this.tweens.add({
+        targets: peg,
+        scale: 0,
+        alpha: 0,
+        duration: pegFadeDuration,
+        delay: i * staggerPerPeg,
+        ease: 'Power2',
+        onComplete: () => {
+          peg.destroy();
+          completed++;
+          if (completed === total) {
+            this.pegs = createPegField(this);
+            if (onComplete) onComplete();
+          }
+        }
+      });
+    });
   }
 
   endSession() {

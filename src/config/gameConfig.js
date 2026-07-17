@@ -8,6 +8,7 @@ export const PHYSICS = {
   ball: { radius: 8, restitution: 0.85, friction: 0.01, frictionStatic: 0 },
   // frictionStatic: 0 keeps a slow-moving ball from pinning in the notch between two pegs.
   peg: { radius: 6, restitution: 0.7, friction: 0, frictionStatic: 0 },
+  wall: { restitution: 0.6, friction: 0, frictionStatic: 0 },
 };
 
 const PEG_JITTER = 5;
@@ -36,6 +37,7 @@ export const PEG_FIELD = {
 
 export const SLOTS = {
   height: 60,
+  slotGap: 20, // px gap between zones; ball can fall through gaps and score 0
   // comboQualifies: true only for the higher-value zones — landing in a gutter/low zone breaks the streak.
   // grantsBonusBall: the outer edge zones — lowest-probability landings on a Galton-board-shaped
   // distribution funneling toward center — so a bonus ball there feels earned, not free.
@@ -68,6 +70,12 @@ export const JUICE = {
   },
   comboBreakFlash: { duration: 180, color: [255, 60, 60] },
   nearMissMargin: 14, // px from the top-zone boundary that still counts as "so close"
+  wallBounceImpulse: 3, // horizontal velocity boost when hitting a side wall
+  trail: {
+    lifespan: 330,
+    alpha: 0.4,
+    scale: 0.7,
+  },
   bonusFlash: { duration: 150, color: [80, 255, 140] },
   bonusParticleCount: 14,
 };
@@ -79,9 +87,16 @@ export const BONUS_BALLS = {
 };
 
 export const NARRATOR = {
-  minDropsBetweenLines: 5,
-  maxDropsBetweenLines: 8,
+  minDropsBetweenLines: 2,
+  maxDropsBetweenLines: 4,
   scoreThreshold: 3000, // placeholder — set from playtest data
+};
+
+// Each peg shrinks and fades out one by one (random order) after a ball resolves,
+// before the next layout appears. Visual-only; physics bodies are removed after the tween.
+export const PEG_TRANSITION = {
+  pegFadeDuration: 80,
+  staggerPerPeg: 7,
 };
 
 export const SESSION = {
