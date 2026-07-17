@@ -256,16 +256,19 @@ export default class GameScene extends Phaser.Scene {
   }
 
   randomizePegs(onComplete) {
-    const shuffled = Phaser.Utils.Array.Shuffle([...this.pegs]);
     const { pegFadeDuration, staggerPerPeg } = PEG_TRANSITION;
-    let completed = 0;
-    const total = shuffled.length;
+    const oldPegs = [...this.pegs];
+    const exitTotal = oldPegs.length;
 
-    if (total === 0) {
+    if (exitTotal === 0) {
       this.pegs = createPegField(this);
       if (onComplete) onComplete();
       return;
     }
+
+    // Exit phase: randomize order, animate out
+    const shuffled = Phaser.Utils.Array.Shuffle(oldPegs);
+    let exitDone = 0;
 
     shuffled.forEach((peg, i) => {
       this.tweens.add({
@@ -277,11 +280,30 @@ export default class GameScene extends Phaser.Scene {
         ease: 'Power2',
         onComplete: () => {
           peg.destroy();
-          completed++;
-          if (completed === total) {
-            this.pegs = createPegField(this);
-            if (onComplete) onComplete();
-          }
+          exitDone++;
+          if (exitDone !== exitTotal) return;
+
+          // Entry phase: create new field and animate in
+          this.pegs = createPegField(this);
+          this.pegs.forEach(p => p.setAlpha(0));
+
+          let entryDone = 0;
+          const entryTotal = this.pegs.length;
+          if (entryTotal === 0) { if (onComplete) onComplete(); return; }
+
+          this.pegs.forEach((peg, j) => {
+            this.tweens.add({
+              targets: peg,
+              alpha: 1,
+              duration: pegFadeDuration,
+              delay: j * staggerPerPeg,
+              ease: 'Power2',
+              onComplete: () => {
+                entryDone++;
+                if (entryDone === entryTotal && onComplete) onComplete();
+              }
+            });
+          });
         }
       });
     });
