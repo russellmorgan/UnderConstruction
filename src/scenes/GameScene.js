@@ -17,7 +17,7 @@ export default class GameScene extends Phaser.Scene {
     this.ballsRemaining = SESSION.ballsPerSession;
     this.ballInPlay = false;
 
-    createPegField(this);
+    this.pegs = createPegField(this);
     this.createSlots();
     this.createFloor();
     this.createWalls();
@@ -209,6 +209,8 @@ export default class GameScene extends Phaser.Scene {
     this.currentBall = null;
     this.ballInPlay = false;
 
+    this.randomizePegs();
+
     this.ballsRemaining--;
     this.updateBallsText();
     this.narrator.onDrop(this.scoreManager.score);
@@ -233,6 +235,11 @@ export default class GameScene extends Phaser.Scene {
 
   updateBallsText() {
     this.ballsText.setText(`Balls: ${this.ballsRemaining}`);
+  }
+
+  randomizePegs() {
+    this.pegs.forEach(peg => peg.destroy());
+    this.pegs = createPegField(this);
   }
 
   endSession() {
