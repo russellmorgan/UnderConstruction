@@ -35,6 +35,16 @@ export default class MenuScene extends Phaser.Scene {
       .on('pointerup', () => this.scene.start('GameScene'));
 
     this.loadHighScore();
+
+    this.add
+      .text(BOARD_WIDTH / 2, BOARD_HEIGHT - 100, 'clear high score', {
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        color: '#555577',
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerup', () => this.clearHighScore());
   }
 
   async loadHighScore() {
@@ -42,5 +52,11 @@ export default class MenuScene extends Phaser.Scene {
     await adapter.init();
     const highScore = await adapter.getHighScore();
     this.highScoreText.setText(`High score: ${highScore}`);
+  }
+
+  async clearHighScore() {
+    const adapter = getActiveAdapter();
+    await adapter.clearHighScore();
+    this.highScoreText.setText('High score: —');
   }
 }

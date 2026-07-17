@@ -37,7 +37,7 @@ export const PEG_FIELD = {
 
 export const SLOTS = {
   height: 60,
-  slotGap: 20, // px gap between zones; ball can fall through gaps and score 0
+  slotGap: 40, // px gap between zones; ball can fall through gaps and score 0
   // comboQualifies: true only for the higher-value zones — landing in a gutter/low zone breaks the streak.
   // grantsBonusBall: the outer edge zones — lowest-probability landings on a Galton-board-shaped
   // distribution funneling toward center — so a bonus ball there feels earned, not free.

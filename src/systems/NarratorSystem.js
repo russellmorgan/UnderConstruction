@@ -54,7 +54,7 @@ export default class NarratorSystem {
       this.currentTween = this.scene.tweens.add({
         targets: this.text,
         alpha: 0,
-        duration: 80,
+        duration: 250,
         yoyo: true,
         repeat: 2,
         ease: 'Power0',

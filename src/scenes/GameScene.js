@@ -87,6 +87,7 @@ export default class GameScene extends Phaser.Scene {
       });
       zone.setData('comboQualifies', comboQualifies);
       zone.setData('grantsBonusBall', grantsBonusBall);
+      zone.setData('scoreCutoff', y - height / 2 + height * 0.3);
 
       const left = slotGap + i * (zoneWidth + slotGap);
       this.slotBounds.push({ left, right: left + zoneWidth });
@@ -145,7 +146,13 @@ export default class GameScene extends Phaser.Scene {
         this.scoreManager.add(1);
         this.audioFeedback.pegHit();
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
+        const peg = otherBody.gameObject;
+        const orig = peg.fillColor;
+        peg.setFillStyle(0xffffff);
+        this.tweens.add({ targets: peg, fillColor: orig, duration: 100 });
       } else if (otherBody.label?.startsWith('slot-')) {
+        const ballBottom = ballBody.position.y + PHYSICS.ball.radius;
+        if (ballBottom > otherBody.gameObject.getData('scoreCutoff') || ballBody.velocity.y <= 0) continue;
         this.checkNearMiss(ballBody.gameObject.x);
         this.resolveDrop(
           Number(otherBody.label.split('-')[1]),
@@ -232,13 +239,13 @@ export default class GameScene extends Phaser.Scene {
     this.updateBallsText();
     this.narrator.onDrop(this.scoreManager.score);
 
-    this.randomizePegs(() => {
-      if (this.ballsRemaining <= 0) {
-        this.endSession();
-      } else {
+    if (this.ballsRemaining <= 0) {
+      this.endSession();
+    } else {
+      this.randomizePegs(() => {
         this.dropController.setEnabled(true);
-      }
-    });
+      });
+    }
   }
 
   // Reuses the existing juice-pass hooks (flash, particle burst) tinted green, plus a

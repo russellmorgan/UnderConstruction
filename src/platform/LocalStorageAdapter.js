@@ -23,4 +23,12 @@ export default class LocalStorageAdapter extends PlatformAdapter {
       // storage unavailable (private browsing, quota, etc) — fail silently, non-critical data
     }
   }
+
+  async clearHighScore() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      // storage unavailable — fail silently
+    }
+  }
 }
