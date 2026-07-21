@@ -15,7 +15,55 @@ export const PEG_FIELD = {
   spacingY: 40,
   topMargin: 140,
   sideMargin: 30,
+  jitter: 3, // max random px offset applied to each peg's x/y so templates don't look pixel-identical on repeat
 };
+
+// Board silhouettes. One is picked at random per game (and may be mirrored) so the
+// peg field looks different every playthrough, not just the scoring-tier colors.
+// Rows don't need to be the same length — createPegField bounds each row's columns by
+// that row's own string length, so a row can be widened independently of its neighbors.
+// 'X' = peg present, '.' = empty. Avoid 2+ consecutive fully-solid rows (the zigzag
+// stagger can close the gaps enough to wall off the ball's path), and aim for at least
+// ~20 open cells so all special peg tiers have room to spread out.
+// Every row here is extended one peg past its own previous right edge (widening the row
+// itself if it was already fully solid) versus the original 10-wide symmetric shapes —
+// the un-widened field sat visibly left of board-center, since the staggered offset
+// shifts odd rows right of even rows but both were bounded by the same 10-column cap.
+export const PEG_TEMPLATES = [
+  {
+    id: 'full',
+    rows: Array(8).fill('XXXXXXXXXXX'),
+  },
+  {
+    id: 'diamond',
+    rows: ['....XXX...', '...XXXXX..', '..XXXXXXX.', '.XXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', '...XXXXX..', '....XXX...'],
+  },
+  {
+    id: 'hourglass',
+    rows: ['XXXXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', '...XXXXX..', '...XXXXX..', '..XXXXXXX.', '.XXXXXXXXX', 'XXXXXXXXXXX'],
+  },
+  {
+    id: 'funnel',
+    rows: ['XXXXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', '..XXXXXXX.', '...XXXXX..', '...XXXXX..', '....XXX...', '...XXXXX..'],
+  },
+  {
+    id: 'zigzag',
+    rows: ['XXXXXX....', '.XXXXXX...', '..XXXXXX..', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', '....XXXXXX', '...XXXXXX.'],
+  },
+  {
+    id: 'checkerboard',
+    rows: [
+      'X.X.X.X.XX',
+      '.X.X.X.X.XX',
+      'X.X.X.X.XX',
+      '.X.X.X.X.XX',
+      'X.X.X.X.XX',
+      '.X.X.X.X.XX',
+      'X.X.X.X.XX',
+      '.X.X.X.X.XX',
+    ],
+  },
+];
 
 // Peg variants. Every peg not claimed by a count > 0 entry falls back to 'base'.
 // score is flat points; scoreMultiplier is × the base entry's score.
@@ -84,6 +132,18 @@ export const NARRATOR = {
 
 export const SESSION = {
   ballsPerSession: 10,
+};
+
+// Sparse peg templates can let a ball settle into a stable resting spot (balanced on
+// an isolated peg, wedged in a narrow gap) with no peg/slot/floor collision left to
+// resolve it, hanging the drop forever. This watchdog force-recovers: nudge once after
+// a stretch of no downward progress, then give up and resolve as a 0-point floor hit.
+export const BALL_STALL = {
+  checkInterval: 400, // ms between stall checks
+  minProgress: 3, // px of downward movement since the last check that counts as "still falling"
+  nudgeAfter: 1200, // ms with no progress before applying a one-time horizontal nudge
+  forceResolveAfter: 3200, // ms with no progress before giving up and resolving as a floor hit
+  nudgeSpeed: 3, // horizontal speed applied by the nudge
 };
 
 export const STORAGE_KEY = 'under-construction:highScore';

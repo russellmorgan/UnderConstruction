@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS, SLOTS, SESSION, JUICE, COMBO } from '../config/gameConfig.js';
+import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS, SLOTS, SESSION, JUICE, COMBO, BALL_STALL } from '../config/gameConfig.js';
 import { createPegField } from '../systems/PegField.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
@@ -120,6 +120,42 @@ export default class GameScene extends Phaser.Scene {
       label: 'ball',
     });
     this.currentBall = ball;
+    this.stallCheckElapsed = 0;
+    this.stalledMs = 0;
+    this.stallLastY = null;
+    this.stallNudged = false;
+  }
+
+  // Belt-and-suspenders against a ball settling into a stable resting spot with no
+  // peg/slot/floor collision left to fire (e.g. balanced on an isolated peg on a
+  // sparse template) — samples downward progress periodically and force-recovers
+  // rather than letting a drop (and the whole session) hang forever.
+  update(time, delta) {
+    if (!this.ballInPlay || !this.currentBall) return;
+
+    this.stallCheckElapsed += delta;
+    if (this.stallCheckElapsed < BALL_STALL.checkInterval) return;
+    this.stallCheckElapsed = 0;
+
+    const y = this.currentBall.y;
+    const progressed = this.stallLastY === null || y - this.stallLastY > BALL_STALL.minProgress;
+    this.stallLastY = y;
+
+    if (progressed) {
+      this.stalledMs = 0;
+      this.stallNudged = false;
+      return;
+    }
+
+    this.stalledMs += BALL_STALL.checkInterval;
+    if (this.stalledMs >= BALL_STALL.forceResolveAfter) {
+      this.resolveDrop(0, false, false);
+    } else if (this.stalledMs >= BALL_STALL.nudgeAfter && !this.stallNudged) {
+      this.stallNudged = true;
+      const body = this.currentBall.body;
+      const nudgeX = (Math.random() < 0.5 ? -1 : 1) * BALL_STALL.nudgeSpeed;
+      this.matter.body.setVelocity(body, { x: nudgeX, y: body.velocity.y });
+    }
   }
 
   handleCollisions(event) {
