@@ -132,6 +132,15 @@ export default class GameScene extends Phaser.Scene {
 
       const otherBody = ballBody === bodyA ? bodyB : bodyA;
       if (otherBody.label === 'peg') {
+        const points = otherBody.gameObject.getData('points');
+        if (points < 0) {
+          this.failDrop(otherBody.gameObject.x, otherBody.gameObject.y, points);
+          continue;
+        }
+        this.scoreManager.add(points);
+        if (otherBody.gameObject.getData('isSpecial')) {
+          this.showPegPopup(otherBody.gameObject.x, otherBody.gameObject.y, points);
+        }
         this.audioFeedback.pegHit();
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
       } else if (otherBody.label?.startsWith('slot-')) {
@@ -157,6 +166,26 @@ export default class GameScene extends Phaser.Scene {
     if ((nearLeftEdge || nearRightEdge) && (landingX < topBounds.left || landingX > topBounds.right)) {
       this.narrator.show('So close!');
     }
+  }
+
+  showPegPopup(x, y, points, label) {
+    const { riseDistance, duration, positiveColor, negativeColor } = JUICE.pegPopup;
+    const text = this.add
+      .text(x, y - PHYSICS.peg.radius - 4, label ?? `${points > 0 ? '+' : ''}${points}`, {
+        fontFamily: 'monospace',
+        fontSize: '14px',
+        color: points > 0 ? positiveColor : negativeColor,
+      })
+      .setOrigin(0.5);
+
+    this.tweens.add({
+      targets: text,
+      y: text.y - riseDistance,
+      alpha: 0,
+      duration,
+      ease: 'Cubic.easeOut',
+      onComplete: () => text.destroy(),
+    });
   }
 
   createParticleTexture() {
@@ -204,6 +233,21 @@ export default class GameScene extends Phaser.Scene {
       this.awardBonusBalls(bonusCount, this.currentBall.x, this.currentBall.y);
     }
 
+    this.finishBall();
+  }
+
+  // A negative peg ends the drop immediately instead of letting the ball keep falling
+  // into a slot — the penalty is the whole outcome, not just a deduction along the way.
+  failDrop(x, y, points) {
+    this.scoreManager.add(points);
+    this.showPegPopup(x, y, points, 'FAIL');
+    this.scoreParticles.setParticleTint(JUICE.pegFail.color);
+    this.scoreParticles.explode(JUICE.pegFail.count, x, y);
+    this.sound.play('hit_hurt');
+    this.finishBall();
+  }
+
+  finishBall() {
     this.currentBall.destroy();
     this.currentBall = null;
     this.ballInPlay = false;
