@@ -22,7 +22,7 @@ Pushes to the `dev` branch auto-deploy to GitHub Pages via [.github/workflows/de
 
 ## Architecture
 
-**Scene flow** (`src/scenes/`): `BootScene` (preloads audio, uses `import.meta.env.BASE_URL`) → `MenuScene` → `GameScene` (core gameplay) → `ResultsScene`. `PauseScene` is launched on top of `GameScene` (via `scene.launch`, not `scene.start`) when Esc is pressed, so `GameScene` state is preserved underneath.
+**Scene flow** (`src/scenes/`): `BootScene` (preloads audio, uses `import.meta.env.BASE_URL`) → `MenuScene` → `GameScene` (core gameplay). Clearing a board's earn threshold sends the player to `BoardClearedScene` (a timed interstitial, delay set by `BOARD_CLEARED.delayMs` in config) which then starts a new `GameScene` with the carried score/multiplier and the next board's higher threshold; falling short of the threshold goes to `ResultsScene` instead. `PauseScene` is launched on top of `GameScene` (via `scene.launch`, not `scene.start`) when Esc is pressed, so `GameScene` state is preserved underneath.
 
 **GameScene is the orchestrator.** It owns the Matter world and wires together a set of small, single-responsibility systems (`src/systems/`) rather than putting game logic in the scene itself:
 - `PegField.createPegField` — builds the static peg grid

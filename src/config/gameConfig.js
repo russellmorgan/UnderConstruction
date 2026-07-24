@@ -111,6 +111,11 @@ export const PROGRESSION = {
   thresholdGrowth: 1.6, // × per board: 8000, 12800, 20480, 32768, ...
 };
 
+// How long the "BOARD CLEARED" interstitial holds before loading the next board.
+export const BOARD_CLEARED = {
+  delayMs: 3000,
+};
+
 // Carry multiplier: a durable, stacking multiplier collected from mult pegs. Separate
 // from the fragile per-board COMBO streak — carry persists across boards and only ever
 // climbs (capped), rewarding players who deliberately collect mult pegs.

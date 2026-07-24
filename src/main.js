@@ -3,6 +3,7 @@ import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS } from './config/gameConfig.js';
 import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
+import BoardClearedScene from './scenes/BoardClearedScene.js';
 import ResultsScene from './scenes/ResultsScene.js';
 import PauseScene from './scenes/PauseScene.js';
 
@@ -24,5 +25,5 @@ new Phaser.Game({
       debug: false,
     },
   },
-  scene: [BootScene, MenuScene, GameScene, ResultsScene, PauseScene],
+  scene: [BootScene, MenuScene, GameScene, BoardClearedScene, ResultsScene, PauseScene],
 });

@@ -381,8 +381,8 @@ export default class GameScene extends Phaser.Scene {
     const earned = this.scoreManager.score - this.boardStartScore;
 
     if (earned >= this.boardTarget) {
-      this.scene.start('GameScene', {
-        level: this.level + 1,
+      this.scene.start('BoardClearedScene', {
+        level: this.level,
         totalScore: this.scoreManager.score,
         carryMultiplier: this.carryMultiplier,
       });
