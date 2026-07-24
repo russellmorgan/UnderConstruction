@@ -13,4 +13,8 @@ export default class PlatformAdapter {
   async setHighScore(value) {
     throw new Error('PlatformAdapter.setHighScore() not implemented');
   }
+
+  async clearData() {
+    throw new Error('PlatformAdapter.clearData() not implemented');
+  }
 }

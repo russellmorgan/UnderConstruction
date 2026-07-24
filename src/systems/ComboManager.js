@@ -7,7 +7,7 @@ export default class ComboManager {
     this.multiplier = 1;
     this.text = scene.add.text(x, y, 'Combo: 1.0x', {
       fontFamily: 'monospace',
-      fontSize: '20px',
+      fontSize: '13px',
       color: '#ffe14d',
     });
   }

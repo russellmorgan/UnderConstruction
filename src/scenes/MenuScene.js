@@ -34,7 +34,24 @@ export default class MenuScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true })
       .on('pointerup', () => this.scene.start('GameScene'));
 
+    this.add
+      .text(BOARD_WIDTH / 2, BOARD_HEIGHT - 30, '[ Reset player data ]', {
+        fontFamily: 'monospace',
+        fontSize: '12px',
+        color: '#777799',
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerup', () => this.clearPlayerData());
+
     this.loadHighScore();
+  }
+
+  async clearPlayerData() {
+    const adapter = getActiveAdapter();
+    await adapter.init();
+    await adapter.clearData();
+    this.highScoreText.setText('High score: 0');
   }
 
   async loadHighScore() {

@@ -66,7 +66,10 @@ export const PEG_TEMPLATES = [
 ];
 
 // Peg variants. Every peg not claimed by a count > 0 entry falls back to 'base'.
-// score is flat points; scoreMultiplier is × the base entry's score.
+// score is flat points. scoreMultiplier no longer inflates a peg's points — it now
+// drives a persistent "carry" multiplier (see CARRY): hitting a mult peg raises a
+// boost that survives board transitions and scales slot payouts. Mult pegs award the
+// flat base score for points; their value is the multiplier they grant.
 // frictionStatic: 0 keeps a slow-moving ball from pinning in the notch between two pegs.
 export const PEG_TYPES = [
   { id: 'base', score: 5, color: 0x00d9ff, restitution: 0.7, friction: 0, frictionStatic: 0, count: 'rest' },
@@ -97,6 +100,24 @@ export const SLOTS = {
 export const COMBO = {
   step: 0.5,
   max: 3,
+};
+
+// Endless-board progression. Each board is a fresh random shape; the player advances
+// only if the score EARNED on that board reaches the level's threshold. The running
+// game total carries across boards, but the gate is per-board earnings.
+// thresholdForLevel(level) = round(baseThreshold * thresholdGrowth^(level-1))
+export const PROGRESSION = {
+  baseThreshold: 8000, // board 1 minimum earned to advance
+  thresholdGrowth: 1.6, // × per board: 8000, 12800, 20480, 32768, ...
+};
+
+// Carry multiplier: a durable, stacking multiplier collected from mult pegs. Separate
+// from the fragile per-board COMBO streak — carry persists across boards and only ever
+// climbs (capped), rewarding players who deliberately collect mult pegs.
+export const CARRY = {
+  start: 1, // multiplier at game start
+  stepPerTier: 0.1, // added per (scoreMultiplier - 1) when a mult peg is hit: mult2 +0.1 ... mult5 +0.4
+  max: 5, // cap
 };
 
 export const JUICE = {

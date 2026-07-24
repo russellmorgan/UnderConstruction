@@ -1,4 +1,4 @@
-import { BOARD_WIDTH, PEG_FIELD, PEG_TEMPLATES, PEG_TYPES, PHYSICS } from '../config/gameConfig.js';
+import { BOARD_WIDTH, CARRY, PEG_FIELD, PEG_TEMPLATES, PEG_TYPES, PHYSICS } from '../config/gameConfig.js';
 
 const BASE_TYPE = PEG_TYPES.find((t) => t.count === 'rest');
 const TOTAL_SPECIAL_PEGS = PEG_TYPES.reduce((sum, t) => sum + (t.count === 'rest' ? 0 : t.count), 0);
@@ -24,7 +24,11 @@ function assignTypes(positionCount) {
 }
 
 function pointsFor(type) {
-  return type.scoreMultiplier ? BASE_TYPE.score * type.scoreMultiplier : type.score;
+  return type.scoreMultiplier ? BASE_TYPE.score : type.score;
+}
+
+function carryBoostFor(type) {
+  return type.scoreMultiplier ? (type.scoreMultiplier - 1) * CARRY.stepPerTier : 0;
 }
 
 function pickTemplate() {
@@ -82,6 +86,7 @@ export function createPegField(scene) {
       label: 'peg',
     });
     peg.setData('points', pointsFor(type));
+    peg.setData('carryBoost', carryBoostFor(type));
     peg.setData('isSpecial', type !== BASE_TYPE);
     pegs.push(peg);
   });

@@ -9,6 +9,7 @@ export default class ResultsScene extends Phaser.Scene {
 
   init(data) {
     this.finalScore = data?.score ?? 0;
+    this.level = data?.level ?? 1;
   }
 
   create() {
@@ -28,8 +29,16 @@ export default class ResultsScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.add
+      .text(BOARD_WIDTH / 2, 240, `Reached board ${this.level}`, {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        color: '#aaaaee',
+      })
+      .setOrigin(0.5);
+
     this.statusText = this.add
-      .text(BOARD_WIDTH / 2, 250, 'Checking high score…', {
+      .text(BOARD_WIDTH / 2, 270, 'Checking high score…', {
         fontFamily: 'monospace',
         fontSize: '16px',
         color: '#ffe14d',

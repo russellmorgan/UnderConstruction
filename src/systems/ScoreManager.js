@@ -1,9 +1,9 @@
 export default class ScoreManager {
-  constructor(scene, x, y) {
-    this.score = 0;
-    this.text = scene.add.text(x, y, 'Score: 0', {
+  constructor(scene, x, y, initialScore = 0) {
+    this.score = initialScore;
+    this.text = scene.add.text(x, y, `Score: ${this.score}`, {
       fontFamily: 'monospace',
-      fontSize: '20px',
+      fontSize: '13px',
       color: '#ffffff',
     });
   }

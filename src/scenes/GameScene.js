@@ -1,5 +1,16 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS, SLOTS, SESSION, JUICE, COMBO, BALL_STALL } from '../config/gameConfig.js';
+import {
+  BOARD_WIDTH,
+  BOARD_HEIGHT,
+  PHYSICS,
+  SLOTS,
+  SESSION,
+  JUICE,
+  COMBO,
+  BALL_STALL,
+  PROGRESSION,
+  CARRY,
+} from '../config/gameConfig.js';
 import { createPegField } from '../systems/PegField.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
@@ -8,31 +19,66 @@ import BonusBallManager from '../systems/BonusBallManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
 import AudioFeedback from '../systems/AudioFeedback.js';
 
+// Minimum score a player must EARN on a given board (not the running total) to
+// advance to the next board. Grows geometrically so later boards demand more.
+export function thresholdForLevel(level) {
+  return Math.round(PROGRESSION.baseThreshold * PROGRESSION.thresholdGrowth ** (level - 1));
+}
+
 export default class GameScene extends Phaser.Scene {
   constructor() {
     super('GameScene');
   }
 
+  // Carries progression across boards: a fresh board is just a scene restart with
+  // this data, so board selection (already random per createPegField call) needs no
+  // special handling here.
+  init(data) {
+    this.level = data?.level ?? 1;
+    this.totalScore = data?.totalScore ?? 0;
+    this.carryMultiplier = data?.carryMultiplier ?? CARRY.start;
+  }
+
   create() {
     this.ballsRemaining = SESSION.ballsPerSession;
     this.ballInPlay = false;
+    this.boardStartScore = this.totalScore;
+    this.boardTarget = thresholdForLevel(this.level);
 
     createPegField(this);
     this.createSlots();
     this.createFloor();
     this.createWalls();
 
-    this.scoreManager = new ScoreManager(this, 10, BOARD_HEIGHT - 30);
-    this.comboManager = new ComboManager(this, 10, BOARD_HEIGHT - 55);
-    this.bonusBalls = new BonusBallManager();
+    this.scoreManager = new ScoreManager(this, 10, BOARD_HEIGHT - 25, this.totalScore);
+    this.comboManager = new ComboManager(this, 10, BOARD_HEIGHT - 42);
+    this.bonusBalls = new BonusBallManager(this.totalScore);
     this.narrator = new NarratorSystem(this, 10, 45, BOARD_WIDTH - 20);
     this.audioFeedback = new AudioFeedback();
-    this.ballsText = this.add.text(BOARD_WIDTH - 140, BOARD_HEIGHT - 30, '', {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#ffffff',
-    });
+    this.ballsText = this.add
+      .text(BOARD_WIDTH - 10, 10, '', {
+        fontFamily: 'monospace',
+        fontSize: '16px',
+        color: '#ffffff',
+      })
+      .setOrigin(1, 0);
     this.updateBallsText();
+
+    this.boardText = this.add.text(10, 10, '', {
+      fontFamily: 'monospace',
+      fontSize: '14px',
+      color: '#aaaaee',
+    });
+    this.updateBoardText();
+
+    this.carryText = this.add
+      .text(BOARD_WIDTH - 10, BOARD_HEIGHT - 42, '', {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#ffe14d',
+      })
+      .setOrigin(1, 0);
+    this.updateCarryText();
 
     this.createParticleTexture();
     this.scoreParticles = this.add.particles(0, 0, 'particleDot', {
@@ -174,6 +220,11 @@ export default class GameScene extends Phaser.Scene {
           continue;
         }
         this.scoreManager.add(points);
+        const carryBoost = otherBody.gameObject.getData('carryBoost');
+        if (carryBoost > 0) {
+          this.carryMultiplier = Math.min(CARRY.max, this.carryMultiplier + carryBoost);
+          this.updateCarryText();
+        }
         if (otherBody.gameObject.getData('isSpecial')) {
           this.showPegPopup(otherBody.gameObject.x, otherBody.gameObject.y, points);
         }
@@ -248,7 +299,7 @@ export default class GameScene extends Phaser.Scene {
 
   resolveDrop(points, qualifies, grantsBonusBall) {
     const { appliedMultiplier, broke } = this.comboManager.registerLanding(qualifies);
-    const awarded = Math.round(points * appliedMultiplier);
+    const awarded = Math.round(points * appliedMultiplier * this.carryMultiplier);
     this.scoreManager.add(awarded);
 
     if (points > 0) {
@@ -293,7 +344,7 @@ export default class GameScene extends Phaser.Scene {
     this.narrator.onDrop(this.scoreManager.score);
 
     if (this.ballsRemaining <= 0) {
-      this.endSession();
+      this.endBoard();
     } else {
       this.dropController.setEnabled(true);
     }
@@ -314,8 +365,29 @@ export default class GameScene extends Phaser.Scene {
     this.ballsText.setText(`Balls: ${this.ballsRemaining}`);
   }
 
-  endSession() {
+  updateBoardText() {
+    this.boardText.setText(`Board ${this.level} — earn ${this.boardTarget}`);
+  }
+
+  updateCarryText() {
+    this.carryText.setText(`Boost: ${this.carryMultiplier.toFixed(1)}x`);
+  }
+
+  // Out of balls: advance to a new (randomly-shaped) board if this board's earnings
+  // met its target, carrying the running total and carry multiplier forward. Otherwise
+  // the run ends here.
+  endBoard() {
     this.dropController.setEnabled(false);
-    this.scene.start('ResultsScene', { score: this.scoreManager.score });
+    const earned = this.scoreManager.score - this.boardStartScore;
+
+    if (earned >= this.boardTarget) {
+      this.scene.start('GameScene', {
+        level: this.level + 1,
+        totalScore: this.scoreManager.score,
+        carryMultiplier: this.carryMultiplier,
+      });
+    } else {
+      this.scene.start('ResultsScene', { score: this.scoreManager.score, level: this.level });
+    }
   }
 }
