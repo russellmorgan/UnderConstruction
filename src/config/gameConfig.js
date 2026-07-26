@@ -172,4 +172,4 @@ export const BALL_STALL = {
   nudgeSpeed: 3, // horizontal speed applied by the nudge
 };
 
-export const STORAGE_KEY = 'under-construction:highScore';
+export const STORAGE_KEY = 'midway-drop:highScore';

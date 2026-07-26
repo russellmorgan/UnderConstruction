@@ -1,6 +1,6 @@
 # Pachinko/Peggle-style Web Game — MVP Plan
 
-**Working title: "Under Construction"** (provisional — dev-time placeholder only, not locked as the ship name. Other candidates under consideration: FINAL_v2_REAL, Top 8, New Message (1).)
+**Title: "Midway Drop"**
 
 Phaser + Matter.js. Goal: fast, data-driven signal test — not a breakout hit, just real activity to measure against.
 

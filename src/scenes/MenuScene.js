@@ -9,7 +9,7 @@ export default class MenuScene extends Phaser.Scene {
 
   create() {
     this.add
-      .text(BOARD_WIDTH / 2, 200, 'Under Construction', {
+      .text(BOARD_WIDTH / 2, 200, 'Midway Drop', {
         fontFamily: 'monospace',
         fontSize: '32px',
         color: '#ffe14d',
