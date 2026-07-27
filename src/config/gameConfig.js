@@ -5,7 +5,9 @@ export const BOARD_HEIGHT = 720;
 
 export const PHYSICS = {
   gravityY: 1,
-  ball: { radius: 8, restitution: 0.85, friction: 0.01, frictionStatic: 0 },
+  // color: ivory rather than pure white so it doesn't clash with the white/cream carnival
+  // chrome, and stays visually distinct from every peg tier.
+  ball: { radius: 8, restitution: 0.85, friction: 0.01, frictionStatic: 0, color: 0xfaf6ec },
   peg: { radius: 6 },
 };
 
@@ -71,14 +73,28 @@ export const PEG_TEMPLATES = [
 // boost that survives board transitions and scales slot payouts. Mult pegs award the
 // flat base score for points; their value is the multiplier they grant.
 // frictionStatic: 0 keeps a slow-moving ball from pinning in the notch between two pegs.
+//
+// Color logic, end to end: base pegs are muted antique brass so the ~60 of them sit
+// back. The four mult tiers read as a prize-shelf ladder — bronze → silver → gold →
+// diamond — a metaphor most players already know, so "which peg is worth more" is
+// legible without reading a number. `ring`/`glow` intensify with tier so the rarer
+// pegs are visibly juicier, not just differently colored. Diamond is the one reward
+// peg that breaks from warm-brass into cool cyan-white — a deliberate palette break so
+// the jackpot tier still pops even after a player's eye has adapted to the ladder.
+//
+// The penalty peg is `hazard: true` and drawn by a completely different generator
+// (makeHazardPegTexture, see PegField.pegTextureFor) — spiked mine silhouette, black/
+// yellow warning stripe, pulsing red glow, a shiver tween. It's the one peg that ends
+// a drop outright (see GameScene.failDrop), so it has to read as dangerous from across
+// the board, not just on contact — and it must never share the reward family's palette,
+// which is why no reward tier is red or black.
 export const PEG_TYPES = [
-  { id: 'base', score: 5, color: 0x00d9ff, restitution: 0.7, friction: 0, frictionStatic: 0, count: 'rest' },
-  { id: 'mult2', scoreMultiplier: 2, color: 0x9d4edd, restitution: 0.8, friction: 0, frictionStatic: 0, count: 2 },
-  { id: 'mult3', scoreMultiplier: 3, color: 0xffb703, restitution: 0.85, friction: 0, frictionStatic: 0, count: 2 },
-  { id: 'mult4', scoreMultiplier: 4, color: 0xfb8500, restitution: 0.9, friction: 0, frictionStatic: 0, count: 2 },
-  { id: 'mult5', scoreMultiplier: 5, color: 0xff006e, restitution: 0.95, friction: 0, frictionStatic: 0, count: 2 },
-  // white keeps this visually out of the purple/gold/orange/pink reward family entirely.
-  { id: 'penalty', score: -20, color: 0xffffff, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 1 },
+  { id: 'base', score: 5, color: 0xb98a4b, restitution: 0.7, friction: 0, frictionStatic: 0, count: 'rest' },
+  { id: 'mult2', scoreMultiplier: 2, color: 0xb5732f, ring: 0x7a4a1e, glow: 0.55, restitution: 0.8, friction: 0, frictionStatic: 0, count: 2 }, // bronze
+  { id: 'mult3', scoreMultiplier: 3, color: 0xcdd7e0, ring: 0x8b97a3, glow: 0.7, restitution: 0.85, friction: 0, frictionStatic: 0, count: 2 }, // silver
+  { id: 'mult4', scoreMultiplier: 4, color: 0xf2b134, ring: 0xad7a10, glow: 0.9, restitution: 0.9, friction: 0, frictionStatic: 0, count: 2 }, // gold
+  { id: 'mult5', scoreMultiplier: 5, color: 0xa8e8ff, ring: 0x5fd0f2, glow: 1.15, restitution: 0.95, friction: 0, frictionStatic: 0, count: 2 }, // diamond
+  { id: 'penalty', score: -20, color: 0x1a1414, hazard: true, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 1 },
 ];
 
 export const SLOTS = {
@@ -125,7 +141,46 @@ export const CARRY = {
   max: 5, // cap
 };
 
+// Carnival/midway UI palette + chrome tuning. Applies to UI chrome ONLY — the ball and
+// pegs stay on their original clean palette (see PHYSICS/PEG_TYPES) so the play field
+// never reads as "styled into broken".
+export const CARNIVAL = {
+  night: 0x2b1733,
+  nightDeep: 0x140b1c,
+  canvasRed: 0xb5392c,
+  canvasCream: 0xecd7ab,
+  panelRed: 0x8c2318,
+  panelRedDark: 0x4d1610,
+  wood: 0x6b4423,
+  woodDark: 0x35200f,
+  gold: 0xf2b134,
+  goldLight: 0xffd97a,
+  wire: 0x3a2a1a,
+  bulbOn: 0xfff3c4,
+  bulbRadius: 3.5,
+  ink: 0x2a1108,
+  boardTop: 0x1b1026,
+  boardBottom: 0x0d0714,
+  // Hazard family — reserved for the one dangerous peg. Never reused for a reward so
+  // the "avoid this" signal stays unambiguous.
+  hazardBlack: 0x14100e,
+  hazardYellow: 0xf5c518,
+  hazardRed: 0xe8362b,
+  // string colors for text objects
+  cream: '#f4e3c1',
+  goldText: '#ffcf5c',
+  inkText: '#2a1108',
+  dimText: '#b79a72',
+  greenText: '#8fe08a',
+  // idle animation
+  swayDegrees: 1.4,
+  swayDuration: 2600,
+  flickerMin: 900,
+  flickerMax: 2200,
+};
+
 export const JUICE = {
+  bloom: { color: 0xffffff, outerStrength: 4, distance: 10, quality: 10 },
   shake: {
     peg: { duration: 40, intensity: 0.002 },
     score: { duration: 120, intensity: 0.004 }, // multiplied by current multiplier at call time
@@ -137,8 +192,43 @@ export const JUICE = {
     hotColor: 0xffe14d,
   },
   comboBreakFlash: { duration: 180, color: [255, 60, 60] },
-  pegPopup: { riseDistance: 24, duration: 450, positiveColor: '#7cff7c', negativeColor: '#ff5c5c' },
-  pegFail: { color: 0xff3333, count: 12 },
+  // Reward-tier (mult peg) popup: scales with the peg's carry-boost tier (0 = bronze,
+  // 1 = diamond). Color rides the same warm→cool ladder as the peg palette itself
+  // (gold at low tiers, icy diamond-white at max) rather than an arbitrary hot color,
+  // so the popup and the peg always agree about what "better" looks like.
+  rewardPopup: {
+    baseFontSize: 22,
+    maxFontSize: 38,
+    floatDistance: 70,
+    popInMs: 240,
+    holdMs: 500,
+    fadeMs: 550,
+    wobbleDegrees: 5,
+    colorLow: 0xffe14d,
+    colorHigh: 0xbdfaff,
+  },
+  // The hazard peg is the one danger in the game — ends the drop outright — so its
+  // feedback is deliberately the loudest thing in JUICE: a real shockwave ring, a
+  // two-tone (red/black) burst well above the reward-peg particle counts, a hard
+  // camera hit, and a popup that shakes instead of gently floating.
+  pegFail: {
+    colorCore: 0xe8362b,
+    colorSpark: 0x1a1414,
+    count: 26,
+    shake: { duration: 260, intensity: 0.012 },
+    flash: { duration: 240, color: [232, 54, 43] },
+    shockwave: { duration: 380, startScale: 0.5, endScale: 2.6 },
+    popup: {
+      fontSize: 26,
+      floatDistance: 40,
+      popInMs: 140,
+      holdMs: 420,
+      fadeMs: 320,
+      shakeAmplitude: 5,
+      shakeCount: 6,
+      color: '#ffdd57',
+    },
+  },
   nearMissMargin: 14, // px from the top-zone boundary that still counts as "so close"
   bonusFlash: { duration: 150, color: [80, 255, 140] },
   bonusParticleCount: 14,

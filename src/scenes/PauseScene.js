@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT } from '../config/gameConfig.js';
+import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL } from '../config/gameConfig.js';
+import { signPanel, signText, sway, ticketButton } from '../ui/carnival.js';
 
 // Launched on top of a paused GameScene (rather than living inside it) so its
 // buttons keep receiving input while GameScene's own update/physics/input are frozen.
@@ -11,33 +12,19 @@ export default class PauseScene extends Phaser.Scene {
   create() {
     this.add.rectangle(BOARD_WIDTH / 2, BOARD_HEIGHT / 2, BOARD_WIDTH, BOARD_HEIGHT, 0x000000, 0.75);
 
-    this.add
-      .text(BOARD_WIDTH / 2, BOARD_HEIGHT / 2 - 60, 'Paused', {
-        fontFamily: 'monospace',
-        fontSize: '32px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
+    const sign = this.add.container(BOARD_WIDTH / 2, BOARD_HEIGHT / 2 - 80);
+    sign.add(signPanel(this, 0, 0, 260, 70));
+    sign.add(signText(this, 0, -8, 'INTERMISSION', 22));
+    sign.add(signText(this, 0, 18, 'the board will wait', 11, CARNIVAL.cream));
+    sway(this, sign);
 
-    this.add
-      .text(BOARD_WIDTH / 2, BOARD_HEIGHT / 2, '[ Resume ]', {
-        fontFamily: 'monospace',
-        fontSize: '22px',
-        color: '#00d9ff',
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerup', () => this.resume());
-
-    this.add
-      .text(BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 50, '[ Main Menu ]', {
-        fontFamily: 'monospace',
-        fontSize: '22px',
-        color: '#00d9ff',
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerup', () => this.goToMenu());
+    ticketButton(this, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 20, 200, 50, 'BACK IN', () => this.resume(), {
+      notchColor: 0x0b0710,
+    });
+    ticketButton(this, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 92, 170, 42, 'MIDWAY', () => this.goToMenu(), {
+      fontSize: 17,
+      notchColor: 0x0b0710,
+    });
 
     this.input.keyboard.on('keydown-ESC', () => this.resume());
   }

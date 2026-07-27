@@ -40,4 +40,20 @@ export default class AudioFeedback {
   comboBreak() {
     this.tone(180, 0.3, { type: 'sawtooth', gain: 0.15 });
   }
+
+  // Descending pitch rather than a fixed tone — reads as a deflate/pop, layered under
+  // the real 'hit_hurt' sample the hazard peg also plays.
+  ballPop() {
+    const ctx = this.getContext();
+    const osc = ctx.createOscillator();
+    const amp = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(220, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.25);
+    amp.gain.setValueAtTime(0.22, ctx.currentTime);
+    amp.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+    osc.connect(amp).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  }
 }

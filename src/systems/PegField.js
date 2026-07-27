@@ -1,4 +1,5 @@
-import { BOARD_WIDTH, CARRY, PEG_FIELD, PEG_TEMPLATES, PEG_TYPES, PHYSICS } from '../config/gameConfig.js';
+import { BOARD_WIDTH, CARNIVAL, CARRY, PEG_FIELD, PEG_TEMPLATES, PEG_TYPES, PHYSICS } from '../config/gameConfig.js';
+import { PEG_TEXTURE_SCALE, makeHazardPegTexture, makePegTexture } from '../ui/carnival.js';
 
 const BASE_TYPE = PEG_TYPES.find((t) => t.count === 'rest');
 const TOTAL_SPECIAL_PEGS = PEG_TYPES.reduce((sum, t) => sum + (t.count === 'rest' ? 0 : t.count), 0);
@@ -47,6 +48,49 @@ function jitter(value) {
   return value + (Math.random() * 2 - 1) * PEG_FIELD.jitter;
 }
 
+// Scoring (mult-tier) pegs get their own ring/glow color and intensity per PEG_TYPES
+// (the bronze/silver/gold/diamond ladder); base pegs stay flat so the tiers are the
+// only thing that catches the eye. The hazard peg is a wholly different generator.
+function pegTextureFor(scene, type) {
+  if (type.hazard) {
+    return makeHazardPegTexture(scene, `peg-${type.id}`, { radius: PHYSICS.peg.radius });
+  }
+  const special = Boolean(type.ring);
+  return makePegTexture(scene, `peg-${type.id}`, type.color, {
+    radius: PHYSICS.peg.radius,
+    ring: type.ring ?? null,
+    glow: type.glow ?? 0,
+    // Base pegs get a flatter finish so a field of ~60 of them doesn't out-shout the
+    // handful of scoring tiers.
+    highlight: special ? 0.42 : 0.2,
+    specular: special ? 0.5 : 0.28,
+  });
+}
+
+// A pulsing red halo behind the peg (so it's visible before the ball ever gets close)
+// plus a constant low-amplitude shiver on the peg itself. Both are scene-owned tweens —
+// GameScene fully restarts each board, so there's nothing to manually tear down.
+function addHazardTells(scene, peg, x, y) {
+  const glow = scene.add.circle(x, y, PHYSICS.peg.radius * 2.4, CARNIVAL.hazardRed, 0.32).setDepth(-0.5);
+  scene.tweens.add({
+    targets: glow,
+    alpha: { from: 0.16, to: 0.5 },
+    scale: { from: 0.85, to: 1.2 },
+    duration: 850,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut',
+  });
+  scene.tweens.add({
+    targets: peg,
+    angle: { from: -4, to: 4 },
+    duration: 220,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut',
+  });
+}
+
 // Staggered grid: alternating rows offset by half spacing. Only cells marked 'X' in
 // the chosen template get a peg, so the board's silhouette varies game to game.
 export function createPegField(scene) {
@@ -76,7 +120,7 @@ export function createPegField(scene) {
 
   positions.forEach(({ x, y }, i) => {
     const type = types[i];
-    const peg = scene.add.circle(x, y, PHYSICS.peg.radius, type.color);
+    const peg = scene.add.image(x, y, pegTextureFor(scene, type)).setScale(PEG_TEXTURE_SCALE);
     scene.matter.add.gameObject(peg, {
       isStatic: true,
       restitution: type.restitution,
@@ -88,6 +132,7 @@ export function createPegField(scene) {
     peg.setData('points', pointsFor(type));
     peg.setData('carryBoost', carryBoostFor(type));
     peg.setData('isSpecial', type !== BASE_TYPE);
+    if (type.hazard) addHazardTells(scene, peg, x, y);
     pegs.push(peg);
   });
 

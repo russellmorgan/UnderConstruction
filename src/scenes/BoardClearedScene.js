@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT, BOARD_CLEARED } from '../config/gameConfig.js';
+import { BOARD_WIDTH, BOARD_HEIGHT, BOARD_CLEARED, CARNIVAL } from '../config/gameConfig.js';
+import { bulbString, marqueeFrame, signPanel, signText, sway, tentBackdrop, valance } from '../ui/carnival.js';
 
 // Brief interstitial shown between boards: confirms the clear, then hands off to the
 // next board (already-selected data — level/totalScore/carryMultiplier — just passes
@@ -16,29 +17,17 @@ export default class BoardClearedScene extends Phaser.Scene {
   }
 
   create() {
-    this.add
-      .text(BOARD_WIDTH / 2, 260, 'BOARD CLEARED', {
-        fontFamily: 'monospace',
-        fontSize: '28px',
-        color: '#7cff7c',
-      })
-      .setOrigin(0.5);
+    tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT);
+    valance(this, 0, BOARD_WIDTH, 26, 30);
+    bulbString(this, 0, 52, BOARD_WIDTH, 52, 14, 16);
 
-    this.add
-      .text(BOARD_WIDTH / 2, 310, `Score: ${this.totalScore}`, {
-        fontFamily: 'monospace',
-        fontSize: '20px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5);
-
-    this.add
-      .text(BOARD_WIDTH / 2, 340, `Boards cleared: ${this.level}`, {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: '#aaaaee',
-      })
-      .setOrigin(0.5);
+    const sign = this.add.container(BOARD_WIDTH / 2, 300);
+    sign.add(signPanel(this, 0, 0, 340, 150, { top: CARNIVAL.gold, bottom: 0xc8891f }));
+    marqueeFrame(this, 0, 0, 314, 124, 26).forEach((b) => sign.add(b));
+    sign.add(signText(this, 0, -34, 'BOARD CLEARED', 26, CARNIVAL.inkText));
+    sign.add(signText(this, 0, 6, String(this.totalScore), 30, CARNIVAL.cream));
+    sign.add(signText(this, 0, 44, `${this.level} down — the next one's meaner`, 13, CARNIVAL.inkText));
+    sway(this, sign, 1.8);
 
     this.time.delayedCall(BOARD_CLEARED.delayMs, () => {
       this.scene.start('GameScene', {
