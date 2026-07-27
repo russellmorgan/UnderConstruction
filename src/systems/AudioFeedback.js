@@ -1,3 +1,5 @@
+import { isSoundOn } from './AudioSettings.js';
+
 // Procedural placeholder SFX via Web Audio oscillators — no audio files.
 // Isolated on purpose: swap the tone-generation bodies for real sound.play() calls
 // later without touching game logic that calls pegHit()/scoreHit()/comboBreak().
@@ -16,6 +18,7 @@ export default class AudioFeedback {
   }
 
   tone(freq, duration, { type = 'sine', gain = 0.15 } = {}) {
+    if (!isSoundOn()) return;
     const ctx = this.getContext();
     const osc = ctx.createOscillator();
     const amp = ctx.createGain();
@@ -44,6 +47,7 @@ export default class AudioFeedback {
   // Descending pitch rather than a fixed tone — reads as a deflate/pop, layered under
   // the real 'hit_hurt' sample the hazard peg also plays.
   ballPop() {
+    if (!isSoundOn()) return;
     const ctx = this.getContext();
     const osc = ctx.createOscillator();
     const amp = ctx.createGain();

@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, CARNIVAL, PEG_FIELD } from '../config/gameConfig.js';
+import { BOARD_WIDTH, CARNIVAL, PEG_FIELD, TIMED_DROP } from '../config/gameConfig.js';
 import { DEPTH } from '../ui/GameHud.js';
 
-// Handles horizontal drop-position selection via drag/click along the top edge,
-// then fires onDrop(x) when the player confirms (release).
+// Handles horizontal drop-position selection, then fires onDrop(x) on confirm.
+// Two modes, switched by TIMED_DROP.enabled:
+//  - drag mode (default): drag/click along the top edge, release to drop where aimed.
+//  - timed mode: indicator sweeps back and forth on its own, any tap/click drops now.
 export default class DropController {
   constructor(scene, onDrop) {
     this.scene = scene;
@@ -12,11 +14,33 @@ export default class DropController {
     this.minX = PEG_FIELD.sideMargin;
     this.maxX = BOARD_WIDTH - PEG_FIELD.sideMargin;
     this.x = BOARD_WIDTH / 2;
+    this.timed = TIMED_DROP.enabled;
 
     this.indicator = this.createIndicator(scene);
 
-    scene.input.on('pointermove', this.handleMove, this);
-    scene.input.on('pointerup', this.handleRelease, this);
+    if (this.timed) {
+      this.sweepTween = this.createSweepTween(scene);
+      scene.input.on('pointerdown', this.handleRelease, this);
+    } else {
+      scene.input.on('pointermove', this.handleMove, this);
+      scene.input.on('pointerup', this.handleRelease, this);
+    }
+  }
+
+  createSweepTween(scene) {
+    const proxy = { x: this.x };
+    return scene.tweens.add({
+      targets: proxy,
+      x: { from: this.minX, to: this.maxX },
+      duration: TIMED_DROP.sweepMs,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        this.x = proxy.x;
+        this.indicator.x = this.x;
+      },
+    });
   }
 
   // A brass chute marker hanging off the header rail, with a dashed drop line down to
@@ -64,8 +88,10 @@ export default class DropController {
 
   handleRelease(pointer) {
     if (!this.enabled) return;
-    this.x = this.clamp(pointer.x);
-    this.indicator.x = this.x;
+    if (!this.timed) {
+      this.x = this.clamp(pointer.x);
+      this.indicator.x = this.x;
+    }
     this.scene.sound.play('laser_shoot');
     this.onDrop(this.x);
   }
@@ -73,10 +99,19 @@ export default class DropController {
   setEnabled(enabled) {
     this.enabled = enabled;
     this.indicator.setVisible(enabled);
+    if (this.sweepTween) {
+      if (enabled) this.sweepTween.resume();
+      else this.sweepTween.pause();
+    }
   }
 
   destroy() {
-    this.scene.input.off('pointermove', this.handleMove, this);
-    this.scene.input.off('pointerup', this.handleRelease, this);
+    if (this.timed) {
+      this.scene.input.off('pointerdown', this.handleRelease, this);
+    } else {
+      this.scene.input.off('pointermove', this.handleMove, this);
+      this.scene.input.off('pointerup', this.handleRelease, this);
+    }
+    if (this.sweepTween) this.sweepTween.stop();
   }
 }

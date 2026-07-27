@@ -207,6 +207,7 @@ export function ticketButton(scene, x, y, w, h, label, onClick, opts = {}) {
   const container = scene.add.container(x, y);
   const g = scene.add.graphics();
   const text = signText(scene, 6, 0, label, opts.fontSize ?? 20, CARNIVAL.inkText);
+  if (opts.textShadow === false) text.setShadow(0, 0, '#000', 0, false, false);
   container.add([g, text]);
 
   const draw = (hot) => {
@@ -254,6 +255,22 @@ export function ticketButton(scene, x, y, w, h, label, onClick, opts = {}) {
     onClick();
   });
   return container;
+}
+
+// A ticketButton that flips between two states on click (e.g. an ON/OFF setting).
+// isOn reads current state, onToggle applies the flip; the button re-renders itself
+// each click rather than mutating ticketButton's internals.
+export function toggleButton(scene, x, y, w, h, labelFor, isOn, onToggle, opts = {}) {
+  let current;
+  const render = () => {
+    if (current) current.destroy();
+    current = ticketButton(scene, x, y, w, h, labelFor(isOn()), () => {
+      onToggle();
+      render();
+    }, opts);
+  };
+  render();
+  return { destroy: () => current.destroy() };
 }
 
 // Gentle hanging-sign sway. Anything on a chain or a hook gets one of these.

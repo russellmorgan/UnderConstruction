@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL } from '../config/gameConfig.js';
-import { signPanel, signText, sway, ticketButton } from '../ui/carnival.js';
+import { isSoundOn, isMusicOn, toggleSound, toggleMusic } from '../systems/AudioSettings.js';
+import { signPanel, signText, sway, ticketButton, toggleButton } from '../ui/carnival.js';
 
 // Launched on top of a paused GameScene (rather than living inside it) so its
 // buttons keep receiving input while GameScene's own update/physics/input are frozen.
@@ -25,6 +26,32 @@ export default class PauseScene extends Phaser.Scene {
       fontSize: 17,
       notchColor: 0x0b0710,
     });
+
+    const toggleY = BOARD_HEIGHT / 2 + 150;
+    toggleButton(
+      this,
+      BOARD_WIDTH / 2 - 60,
+      toggleY,
+      100,
+      32,
+      (on) => `SOUND: ${on ? 'ON' : 'OFF'}`,
+      isSoundOn,
+      () => {
+        this.sound.mute = !toggleSound();
+      },
+      { fontSize: 12, notchColor: 0x0b0710, textShadow: false }
+    );
+    toggleButton(
+      this,
+      BOARD_WIDTH / 2 + 60,
+      toggleY,
+      100,
+      32,
+      (on) => `MUSIC: ${on ? 'ON' : 'OFF'}`,
+      isMusicOn,
+      toggleMusic,
+      { fontSize: 12, notchColor: 0x0b0710, textShadow: false }
+    );
 
     this.input.keyboard.on('keydown-ESC', () => this.resume());
   }

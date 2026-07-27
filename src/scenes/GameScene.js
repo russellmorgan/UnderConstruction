@@ -49,16 +49,6 @@ export default class GameScene extends Phaser.Scene {
     this.boardStartScore = this.totalScore;
     this.boardTarget = thresholdForLevel(this.level);
 
-    this.cameras.main.filters.external.addGlow(
-      JUICE.bloom.color,
-      JUICE.bloom.outerStrength,
-      0,
-      1,
-      false,
-      JUICE.bloom.quality,
-      JUICE.bloom.distance
-    );
-
     createPegField(this);
     this.hud = new GameHud(this);
     this.createSlots();

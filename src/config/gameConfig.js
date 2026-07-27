@@ -20,6 +20,13 @@ export const PEG_FIELD = {
   jitter: 3, // max random px offset applied to each peg's x/y so templates don't look pixel-identical on repeat
 };
 
+// Experimental drop style: when enabled, the drop indicator sweeps back and forth on
+// its own and the player just times a tap/click/space to release — no drag-to-aim.
+export const TIMED_DROP = {
+  enabled: false,
+  sweepMs: 1400, // time for one full left-to-right sweep
+};
+
 // Board silhouettes. One is picked at random per game (and may be mirrored) so the
 // peg field looks different every playthrough, not just the scoring-tier colors.
 // Rows don't need to be the same length — createPegField bounds each row's columns by
@@ -180,7 +187,6 @@ export const CARNIVAL = {
 };
 
 export const JUICE = {
-  bloom: { color: 0xffffff, outerStrength: 4, distance: 10, quality: 10 },
   shake: {
     peg: { duration: 40, intensity: 0.002 },
     score: { duration: 120, intensity: 0.004 }, // multiplied by current multiplier at call time

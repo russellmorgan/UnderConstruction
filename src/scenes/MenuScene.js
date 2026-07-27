@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL, CARRY, JUICE } from '../config/gameConfig.js';
+import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL, CARRY } from '../config/gameConfig.js';
 import { getActiveAdapter } from '../platform/index.js';
+import { isSoundOn, isMusicOn, toggleSound, toggleMusic } from '../systems/AudioSettings.js';
 import {
   bulbString,
   chains,
@@ -11,6 +12,7 @@ import {
   sway,
   tentBackdrop,
   ticketButton,
+  toggleButton,
   valance,
 } from '../ui/carnival.js';
 
@@ -20,16 +22,6 @@ export default class MenuScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.filters.external.addGlow(
-      JUICE.bloom.color,
-      JUICE.bloom.outerStrength,
-      0,
-      1,
-      false,
-      JUICE.bloom.quality,
-      JUICE.bloom.distance
-    );
-
     tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT);
     valance(this, 0, BOARD_WIDTH, 26, 30);
     bulbString(this, 0, 52, BOARD_WIDTH, 52, 14, 16);
@@ -41,10 +33,17 @@ export default class MenuScene extends Phaser.Scene {
 
     // Phaser only overwrites a scene's stored data `if (data)` is truthy on start(), so a
     // bare start('GameScene') would silently resume the previous run's level/score/boost.
-    ticketButton(this, BOARD_WIDTH / 2, 560, 210, 56, 'ADMIT ONE', () =>
-      this.scene.start('GameScene', { level: 1, totalScore: 0, carryMultiplier: CARRY.start })
+    ticketButton(
+      this,
+      BOARD_WIDTH / 2,
+      560,
+      210,
+      56,
+      'ADMIT ONE',
+      () => this.scene.start('GameScene', { level: 1, totalScore: 0, carryMultiplier: CARRY.start }),
+      { textShadow: false }
     );
-    signText(this, BOARD_WIDTH / 2, 614, 'one ball, one bounce, one shot', 13, CARNIVAL.cream).setAlpha(0.75);
+    this.createAudioToggles(614);
 
     this.add
       .text(BOARD_WIDTH / 2, BOARD_HEIGHT - 14, '[ reset player data ]', {
@@ -57,6 +56,20 @@ export default class MenuScene extends Phaser.Scene {
       .on('pointerup', () => this.clearPlayerData());
 
     this.loadHighScore();
+  }
+
+  // SOUND toggles Phaser's sound manager (shared game-wide) and the raw-oscillator
+  // AudioFeedback tones together. MUSIC just persists the preference for now — no
+  // music track exists yet to gate.
+  createAudioToggles(y) {
+    this.sound.mute = !isSoundOn();
+    toggleButton(this, BOARD_WIDTH / 2 - 60, y, 100, 32, (on) => `SOUND: ${on ? 'ON' : 'OFF'}`, isSoundOn, () => {
+      this.sound.mute = !toggleSound();
+    }, { fontSize: 12, textShadow: false });
+    toggleButton(this, BOARD_WIDTH / 2 + 60, y, 100, 32, (on) => `MUSIC: ${on ? 'ON' : 'OFF'}`, isMusicOn, toggleMusic, {
+      fontSize: 12,
+      textShadow: false,
+    });
   }
 
   // Title hangs from the light string on chains and sways — the whole sign is one
