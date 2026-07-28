@@ -1,4 +1,4 @@
-# UnderConstruction
+# Midway Drop
 A game about dropping your balls
 
 ## How to Play

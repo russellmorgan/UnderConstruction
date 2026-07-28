@@ -1,0 +1,40 @@
+import Phaser from 'phaser';
+import { BOARD_WIDTH, BOARD_HEIGHT, BOARD_CLEARED, CARNIVAL } from '../config/gameConfig.js';
+import { bulbString, marqueeFrame, signPanel, signText, sway, tentBackdrop, valance } from '../ui/carnival.js';
+
+// Brief interstitial shown between boards: confirms the clear, then hands off to the
+// next board (already-selected data — level/totalScore/carryMultiplier — just passes
+// through) after a fixed delay instead of loading it instantly.
+export default class BoardClearedScene extends Phaser.Scene {
+  constructor() {
+    super('BoardClearedScene');
+  }
+
+  init(data) {
+    this.level = data?.level ?? 1;
+    this.totalScore = data?.totalScore ?? 0;
+    this.carryMultiplier = data?.carryMultiplier ?? 1;
+  }
+
+  create() {
+    tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT);
+    valance(this, 0, BOARD_WIDTH, 26, 30);
+    bulbString(this, 0, 52, BOARD_WIDTH, 52, 14, 16);
+
+    const sign = this.add.container(BOARD_WIDTH / 2, 300);
+    sign.add(signPanel(this, 0, 0, 340, 150, { top: CARNIVAL.gold, bottom: 0xc8891f }));
+    marqueeFrame(this, 0, 0, 314, 124, 26).forEach((b) => sign.add(b));
+    sign.add(signText(this, 0, -34, 'BOARD CLEARED', 26, CARNIVAL.inkText));
+    sign.add(signText(this, 0, 6, String(this.totalScore), 30, CARNIVAL.cream));
+    sign.add(signText(this, 0, 44, `${this.level} down — the next one's meaner`, 13, CARNIVAL.inkText));
+    sway(this, sign, 1.8);
+
+    this.time.delayedCall(BOARD_CLEARED.delayMs, () => {
+      this.scene.start('GameScene', {
+        level: this.level + 1,
+        totalScore: this.totalScore,
+        carryMultiplier: this.carryMultiplier,
+      });
+    });
+  }
+}

@@ -1,17 +1,31 @@
 # Pachinko/Peggle-style Web Game — MVP Plan
 
-**Working title: "Under Construction"** (provisional — dev-time placeholder only, not locked as the ship name. Other candidates under consideration: FINAL_v2_REAL, Top 8, New Message (1).)
+**Title: "Midway Drop"**
 
 Phaser + Matter.js. Goal: fast, data-driven signal test — not a breakout hit, just real activity to measure against.
 
 ## Theme & art direction (locked)
 
-Meta-aware narrator — comments on its own genre tropes, the score-gate mechanic it's running on, and the reality that this is a fast, cheap web game. Art direction: intentionally lo-fi, MySpace/early-2000s-web pastiche (tiled backgrounds, marquee text, mismatched fonts, fake hit counter) — reinforces the narrator's self-aware bit rather than sitting apart from it.
+Carnival/midway. String lights, striped canvas, painted-sign typography, ticket stubs and
+prize-booth motifs; warm palette of reds, golds, cream and weathered wood. The narrator is
+an in-world carnival barker who hypes, taunts and celebrates the player's take — the
+meta/fourth-wall break is the rare exception, not the default register.
+
+(Supersedes the earlier MySpace/early-2000s-web pastiche direction, replaced during the
+UI pass — see `claude-code-ui-prompt.md`.)
 
 Guardrails:
-- Irony/crappiness confined to UI chrome and decoration only. Ball/peg/physics elements stay visually clean — don't let the joke read as "the game is broken."
-- Needs curation, not just janky-by-default: the specific 2000s-web signifiers (marquee scroll, starfield cursor, Comic Sans, visitor counter) are what make it read as authored irony instead of actually bad. Build a reference board before asset work starts.
-- Audience skews toward people old enough to remember MySpace (roughly late 20s–mid 40s) — the joke doesn't land without that context. Keep in mind when judging early feedback.
+- The play field is themed too (brass-stud pegs on a dark tent backdrop), but it stays *clean*:
+  legibility beats decoration there. Base pegs muted; the four mult tiers read as a prize-shelf
+  ladder (bronze → silver → gold → diamond) with ring/glow intensity climbing per tier; the one
+  hazard peg (ends the drop outright) is a spiked, black/yellow/red warning shape with its own
+  pulsing glow — deliberately never sharing a color with any reward tier. Backdrop stays
+  low-contrast. Never let styling make the board read as "broken."
+- Zero image assets: all chrome is Phaser Graphics, generated shapes and text (`src/ui/carnival.js`).
+  Constraint is deliberate — procedural stripes, scalloped valances, marquee bulbs and ticket
+  shapes carry the theme instead of art.
+- Layouts must survive the Scale Manager (FIT), so position against `BOARD_WIDTH`/`BOARD_HEIGHT`
+  rather than assuming a fixed canvas.
 
 ## Priority tasks
 

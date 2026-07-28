@@ -5,9 +5,12 @@ import { BONUS_BALLS } from '../config/gameConfig.js';
 // order the caller calls them, so a single landing that qualifies for more than one
 // source still can't award past the cap.
 export default class BonusBallManager {
-  constructor() {
+  // initialScore lets a new board's manager start from the carried-over total's
+  // already-crossed thresholds, so resuming a run doesn't re-award every threshold
+  // the player already passed on prior boards in one burst.
+  constructor(initialScore = 0) {
     this.awardedCount = 0;
-    this.scoreThresholdsCrossed = 0;
+    this.scoreThresholdsCrossed = Math.floor(initialScore / BONUS_BALLS.scoreInterval);
     this.comboMilestoneAwarded = false;
   }
 

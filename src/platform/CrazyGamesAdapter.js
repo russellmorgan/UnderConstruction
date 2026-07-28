@@ -18,4 +18,8 @@ export default class CrazyGamesAdapter extends PlatformAdapter {
   async setHighScore(value) {
     // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
   }
+
+  async clearData() {
+    // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
+  }
 }

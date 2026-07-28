@@ -3,10 +3,11 @@ import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS } from './config/gameConfig.js';
 import BootScene from './scenes/BootScene.js';
 import MenuScene from './scenes/MenuScene.js';
 import GameScene from './scenes/GameScene.js';
+import BoardClearedScene from './scenes/BoardClearedScene.js';
 import ResultsScene from './scenes/ResultsScene.js';
 import PauseScene from './scenes/PauseScene.js';
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'app',
   backgroundColor: '#1a1a2e',
@@ -24,5 +25,9 @@ new Phaser.Game({
       debug: false,
     },
   },
-  scene: [BootScene, MenuScene, GameScene, ResultsScene, PauseScene],
+  scene: [BootScene, MenuScene, GameScene, BoardClearedScene, ResultsScene, PauseScene],
 });
+
+// Dev-only handle so a scene/state can be jumped to straight from the console
+// (e.g. game.scene.start('ResultsScene', { score: 9000, level: 3 })) when checking UI.
+if (import.meta.env.DEV) window.game = game;

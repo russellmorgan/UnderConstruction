@@ -3,20 +3,21 @@ import { NARRATOR } from '../config/gameConfig.js';
 import { BELOW_THRESHOLD_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
 
 export default class NarratorSystem {
-  constructor(scene, x, y, width) {
+  // opts.style overrides the text style; opts.onChange(line) fires whenever the visible
+  // line changes (empty string when it clears), so the UI can show/hide its own frame.
+  constructor(scene, x, y, width, opts = {}) {
     this.scene = scene;
     this.dropCount = 0;
     this.nextTrigger = this.rollNextTrigger();
-    this.baseY = y;
+    this.onChange = opts.onChange;
     this.text = scene.add.text(x, y, '', {
       fontFamily: 'monospace',
       fontSize: '16px',
+      color: '#ffe14d',
       wordWrap: { width },
+      ...opts.style,
     });
-    this.text.setAlpha(0);
     this.hideTimer = null;
-    this.currentTween = null;
-    this.currentScore = 0;
   }
 
   rollNextTrigger() {
@@ -25,70 +26,24 @@ export default class NarratorSystem {
   }
 
   onDrop(currentScore) {
-    this.currentScore = currentScore;
     this.dropCount++;
     if (this.dropCount < this.nextTrigger) return;
 
     this.dropCount = 0;
     this.nextTrigger = this.rollNextTrigger();
 
-    const isAbove = currentScore >= NARRATOR.scoreThreshold;
-    const pool = isAbove ? ABOVE_THRESHOLD_LINES : BELOW_THRESHOLD_LINES;
+    const pool = currentScore >= NARRATOR.scoreThreshold ? ABOVE_THRESHOLD_LINES : BELOW_THRESHOLD_LINES;
     const line = Phaser.Utils.Array.GetRandom(pool);
-    this.show(line, isAbove);
+    this.show(line);
   }
 
-  show(line, isAbove, blink) {
-    if (this.currentTween) this.currentTween.stop();
-    if (this.hideTimer) this.hideTimer.remove();
-    this.scene.tweens.killTweensOf(this.text);
-
-    this.text.setAlpha(0);
-    this.text.setScale(1);
-    this.text.setY(this.baseY);
+  show(line) {
     this.text.setText(line);
-
-    if (blink) {
-      this.text.setColor('#ffffff');
-      this.text.setAlpha(1);
-      this.currentTween = this.scene.tweens.add({
-        targets: this.text,
-        alpha: 0,
-        duration: 250,
-        yoyo: true,
-        repeat: 2,
-        ease: 'Power0',
-      });
-    } else {
-      this.text.setColor(isAbove ? '#44ff88' : '#ff4466');
-      if (isAbove) {
-        this.text.setScale(0.9);
-        this.currentTween = this.scene.tweens.add({
-          targets: this.text,
-          alpha: 1,
-          scale: 1,
-          duration: 250,
-          ease: 'Back.easeOut',
-        });
-      } else {
-        this.text.setY(this.baseY - 6);
-        this.currentTween = this.scene.tweens.add({
-          targets: this.text,
-          alpha: 1,
-          y: this.baseY,
-          duration: 400,
-          ease: 'Power2',
-        });
-      }
-    }
-
+    this.onChange?.(line);
+    if (this.hideTimer) this.hideTimer.remove();
     this.hideTimer = this.scene.time.delayedCall(3000, () => {
-      this.scene.tweens.add({
-        targets: this.text,
-        alpha: 0,
-        duration: 300,
-        ease: 'Power2',
-      });
+      this.text.setText('');
+      this.onChange?.('');
     });
   }
 }

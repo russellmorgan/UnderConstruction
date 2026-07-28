@@ -24,11 +24,11 @@ export default class LocalStorageAdapter extends PlatformAdapter {
     }
   }
 
-  async clearHighScore() {
+  async clearData() {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {
-      // storage unavailable — fail silently
+      // storage unavailable — nothing to clear
     }
   }
 }
