@@ -139,6 +139,11 @@ export const BOARD_CLEARED = {
   delayMs: 3000,
 };
 
+// How long the game pauses after the last ball before showing the round results.
+export const RESULTS = {
+  delayMs: 3000,
+};
+
 // Carry multiplier: a durable, stacking multiplier collected from mult pegs. Separate
 // from the fragile per-board COMBO streak — carry persists across boards and only ever
 // climbs (capped), rewarding players who deliberately collect mult pegs.

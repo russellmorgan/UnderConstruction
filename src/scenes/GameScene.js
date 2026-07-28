@@ -11,6 +11,7 @@ import {
   PROGRESSION,
   CARRY,
   CARNIVAL,
+  RESULTS,
 } from '../config/gameConfig.js';
 import GameHud, { DEPTH } from '../ui/GameHud.js';
 import { FONT_HUD, FONT_SIGN, lerpColor } from '../ui/carnival.js';
@@ -530,7 +531,9 @@ export default class GameScene extends Phaser.Scene {
         carryMultiplier: this.carryMultiplier,
       });
     } else {
-      this.scene.start('ResultsScene', { score: this.scoreManager.score, level: this.level });
+      this.time.delayedCall(RESULTS.delayMs, () => {
+        this.scene.start('ResultsScene', { score: this.scoreManager.score, level: this.level });
+      });
     }
   }
 }
