@@ -59,7 +59,23 @@ export default class PauseScene extends Phaser.Scene {
       32,
       (on) => `MUSIC: ${on ? 'ON' : 'OFF'}`,
       isMusicOn,
-      toggleMusic,
+      () => {
+        const on = toggleMusic();
+        const gameScene = this.scene.get('GameScene');
+        if (gameScene) {
+          if (on) {
+            if (!gameScene.gameMusic?.isPlaying) {
+              gameScene.gameMusic = gameScene.sound.add('game_music', { loop: true, volume: 0.2 });
+              gameScene.gameMusic.play();
+            }
+          } else {
+            if (gameScene.gameMusic) {
+              gameScene.gameMusic.stop();
+              gameScene.gameMusic = null;
+            }
+          }
+        }
+      },
       { fontSize: 12, notchColor: 0x0b0710, textShadow: false }
     );
 
