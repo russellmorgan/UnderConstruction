@@ -60,7 +60,7 @@ export const PEG_TEMPLATES = [
   },
   {
     id: 'zigzag',
-    rows: ['XXXXXX....', '.XXXXXX...', '..XXXXXX..', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', '....XXXXXX', '...XXXXXX.'],
+    rows: ['.XXXXXX.X.', '..XX.XXX.X.', '..XXXXXX..', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', '....XXXXXX', '...XXXXXX.'],
   },
   {
     id: 'checkerboard',
@@ -100,11 +100,11 @@ export const PEG_TEMPLATES = [
 // which is why no reward tier is red or black.
 export const PEG_TYPES = [
   { id: 'base', score: 5, color: 0xb98a4b, restitution: 0.7, friction: 0, frictionStatic: 0, count: 'rest' },
-  { id: 'mult2', scoreMultiplier: 2, color: 0xb5732f, ring: 0x7a4a1e, glow: 0.55, restitution: 0.8, friction: 0, frictionStatic: 0, count: 2 }, // bronze
+  { id: 'mult2', scoreMultiplier: 2, color: 0xb5732f, ring: 0x7a4a1e, glow: 0.85, restitution: 0.8, friction: 0, frictionStatic: 0, count: 4 }, // bronze
   { id: 'mult3', scoreMultiplier: 3, color: 0xcdd7e0, ring: 0x8b97a3, glow: 0.7, restitution: 0.85, friction: 0, frictionStatic: 0, count: 2 }, // silver
   { id: 'mult4', scoreMultiplier: 4, color: 0xf2b134, ring: 0xad7a10, glow: 0.9, restitution: 0.9, friction: 0, frictionStatic: 0, count: 2 }, // gold
   { id: 'mult5', scoreMultiplier: 5, color: 0xa8e8ff, ring: 0x5fd0f2, glow: 1.15, restitution: 0.95, friction: 0, frictionStatic: 0, count: 2 }, // diamond
-  { id: 'penalty', score: -20, color: 0x1a1414, hazard: true, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 1 },
+  { id: 'penalty', score: -20, color: 0x1a1414, hazard: true, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 3 },
 ];
 
 export const SLOTS = {
