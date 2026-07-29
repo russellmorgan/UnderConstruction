@@ -106,6 +106,10 @@ export default class MenuScene extends Phaser.Scene {
   playMusic() {
     if (!isMusicOn()) return;
     if (this.music?.isPlaying) return;
+    if (this.sound.locked) {
+      this.sound.once('unlocked', () => this.playMusic());
+      return;
+    }
     this.music = this.sound.add('intro_music', { loop: true, volume: 0 });
     this.music.play();
     this.tweens.add({ targets: this.music, volume: MUSIC_VOLUME, duration: MUSIC_FADE_MS });
