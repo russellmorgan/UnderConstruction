@@ -1,3 +1,6 @@
+// End-of-run results screen — shows the final score and board count, checks/saves high
+// score via the platform adapter, displays a "NEW HOUSE RECORD" banner on a new record,
+// and offers "ONE MORE" (fresh game) or "MIDWAY" (menu) buttons.
 import Phaser from 'phaser';
 import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL, CARRY } from '../config/gameConfig.js';
 import { getActiveAdapter } from '../platform/index.js';
@@ -18,11 +21,13 @@ export default class ResultsScene extends Phaser.Scene {
     super('ResultsScene');
   }
 
+  // Receive the final score and level from game data.
   init(data) {
     this.finalScore = data?.score ?? 0;
     this.level = data?.level ?? 1;
   }
 
+  // Build the results screen: backdrop, banner, receipt stub, high-score check, and action buttons.
   create() {
     tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT);
     valance(this, 0, BOARD_WIDTH, 26, 30);
@@ -58,6 +63,7 @@ export default class ResultsScene extends Phaser.Scene {
   }
 
   // The run's takings, printed like a prize-booth receipt.
+  // Prize-booth receipt: final score, boards cleared count, and comparison to the house record.
   createStub() {
     const y = 280;
     signPanel(this, BOARD_WIDTH / 2, y, 320, 150, { top: CARNIVAL.wood, bottom: CARNIVAL.woodDark, radius: 8 });
@@ -69,6 +75,7 @@ export default class ResultsScene extends Phaser.Scene {
     this.statusText = signText(this, BOARD_WIDTH / 2, y + 54, 'checking the ledger…', 12, CARNIVAL.dimText);
   }
 
+  // Check the platform adapter for a new record; if beaten, persist and show the NEW HOUSE RECORD banner.
   async resolveHighScore() {
     const adapter = getActiveAdapter();
     await adapter.init();

@@ -1,3 +1,6 @@
+// Peg field builder — picks a random template (and may mirror it), assigns peg types
+// (base, mult tiers, hazard) weighted by PEG_TYPES counts, builds Matter static bodies
+// for collision, and adds visual tells (glow/shiver) to hazard pegs.
 import { BOARD_WIDTH, CARNIVAL, CARRY, PEG_FIELD, PEG_TEMPLATES, PEG_TYPES, PHYSICS } from '../config/gameConfig.js';
 import { PEG_TEXTURE_SCALE, makeHazardPegTexture, makePegTexture } from '../ui/carnival.js';
 
@@ -6,6 +9,7 @@ const TOTAL_SPECIAL_PEGS = PEG_TYPES.reduce((sum, t) => sum + (t.count === 'rest
 
 // Assigns each grid position a peg type: `count` positions per non-'rest' type
 // (randomly picked), everything left over gets the 'rest' (base) type.
+// Shuffle all cell indices, then assign non-'rest' peg types to the first N positions, filling the rest with base type.
 function assignTypes(positionCount) {
   const indices = Array.from({ length: positionCount }, (_, i) => i);
   for (let i = indices.length - 1; i > 0; i--) {
@@ -24,14 +28,17 @@ function assignTypes(positionCount) {
   return types;
 }
 
+// Return the flat point value for a peg type (base score for mult pegs, own score for penalty).
 function pointsFor(type) {
   return type.scoreMultiplier ? BASE_TYPE.score : type.score;
 }
 
+// Return the carry-multiplier boost this peg type contributes (0 for base/penalty pegs).
 function carryBoostFor(type) {
   return type.scoreMultiplier ? (type.scoreMultiplier - 1) * CARRY.stepPerTier : 0;
 }
 
+// Pick a random board silhouette template.
 function pickTemplate() {
   return PEG_TEMPLATES[Math.floor(Math.random() * PEG_TEMPLATES.length)];
 }
@@ -39,11 +46,13 @@ function pickTemplate() {
 // Mirrors the boolean mask itself (row-by-row string reversal) rather than mirroring
 // already-computed pixel positions, which would also need to correct for the
 // per-row stagger offset.
+// 50% chance to mirror the template left-to-right (string reversal per row).
 function maybeMirror(rows) {
   if (Math.random() >= 0.5) return rows;
   return rows.map((row) => row.split('').reverse().join(''));
 }
 
+// Apply a small random offset so pegs aren't pixel-perfect grid-aligned.
 function jitter(value) {
   return value + (Math.random() * 2 - 1) * PEG_FIELD.jitter;
 }
@@ -51,6 +60,7 @@ function jitter(value) {
 // Scoring (mult-tier) pegs get their own ring/glow color and intensity per PEG_TYPES
 // (the bronze/silver/gold/diamond ladder); base pegs stay flat so the tiers are the
 // only thing that catches the eye. The hazard peg is a wholly different generator.
+// Select the right texture generator for the peg type (hazard vs reward-tier vs base).
 function pegTextureFor(scene, type) {
   if (type.hazard) {
     return makeHazardPegTexture(scene, `peg-${type.id}`, { radius: PHYSICS.peg.radius });
@@ -70,6 +80,7 @@ function pegTextureFor(scene, type) {
 // A pulsing red halo behind the peg (so it's visible before the ball ever gets close)
 // plus a constant low-amplitude shiver on the peg itself. Both are scene-owned tweens —
 // GameScene fully restarts each board, so there's nothing to manually tear down.
+// Add a pulsing red halo and constant shiver tween to the hazard peg so it's unmistakable.
 function addHazardTells(scene, peg, x, y) {
   const glow = scene.add.circle(x, y, PHYSICS.peg.radius * 2.4, CARNIVAL.hazardRed, 0.32).setDepth(-0.5);
   scene.tweens.add({
@@ -93,6 +104,7 @@ function addHazardTells(scene, peg, x, y) {
 
 // Staggered grid: alternating rows offset by half spacing. Only cells marked 'X' in
 // the chosen template get a peg, so the board's silhouette varies game to game.
+// Build the full peg grid: pick/mirror template, compute positions, assign types, stamp textures, add Matter bodies.
 export function createPegField(scene) {
   const pegs = [];
   const { rows, spacingX, spacingY, topMargin, sideMargin } = PEG_FIELD;

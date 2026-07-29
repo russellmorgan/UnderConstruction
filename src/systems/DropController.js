@@ -1,3 +1,5 @@
+// Handles horizontal drop-position input — two modes (drag-to-aim or timed sweep),
+// renders a brass chute indicator with a dashed drop line, and fires onDrop(x) on release.
 import Phaser from 'phaser';
 import { BOARD_WIDTH, CARNIVAL, PEG_FIELD, TIMED_DROP } from '../config/gameConfig.js';
 import { DEPTH } from '../ui/GameHud.js';
@@ -7,6 +9,7 @@ import { DEPTH } from '../ui/GameHud.js';
 //  - drag mode (default): drag/click along the top edge, release to drop where aimed.
 //  - timed mode: indicator sweeps back and forth on its own, any tap/click drops now.
 export default class DropController {
+  // Set up input listeners and the visual indicator. Two modes: drag (default) or timed sweep.
   constructor(scene, onDrop) {
     this.scene = scene;
     this.onDrop = onDrop;
@@ -27,6 +30,7 @@ export default class DropController {
     }
   }
 
+  // An auto-sweeping tween for timed-drop mode — bounces left-right on a sine ease.
   createSweepTween(scene) {
     const proxy = { x: this.x };
     return scene.tweens.add({
@@ -45,6 +49,7 @@ export default class DropController {
 
   // A brass chute marker hanging off the header rail, with a dashed drop line down to
   // the top of the peg field so the aim reads without covering any of the play area.
+  // Build the brass chute marker + dashed drop line and a gentle bob tween.
   createIndicator(scene) {
     const container = scene.add.container(this.x, 0).setDepth(DEPTH.label);
     const g = scene.add.graphics();
@@ -76,16 +81,19 @@ export default class DropController {
     return container;
   }
 
+  // Constrain x to the playable horizontal range.
   clamp(x) {
     return Phaser.Math.Clamp(x, this.minX, this.maxX);
   }
 
+  // Drag: follow the pointer while held.
   handleMove(pointer) {
     if (!this.enabled) return;
     this.x = this.clamp(pointer.x);
     this.indicator.x = this.x;
   }
 
+  // Confirm the drop at the current x position. Used by both modes.
   handleRelease(pointer) {
     if (!this.enabled) return;
     if (!this.timed) {
@@ -96,6 +104,7 @@ export default class DropController {
     this.onDrop(this.x);
   }
 
+  // Toggle input listening and indicator visibility (disabled while a ball is falling).
   setEnabled(enabled) {
     this.enabled = enabled;
     this.indicator.setVisible(enabled);
@@ -105,6 +114,7 @@ export default class DropController {
     }
   }
 
+  // Tear down input listeners and tweens. Called when the scene shuts down.
   destroy() {
     if (this.timed) {
       this.scene.input.off('pointerdown', this.handleRelease, this);

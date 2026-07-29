@@ -1,4 +1,7 @@
-// Tunable constants. Edit freely during playtesting — no code restructuring needed.
+// All tunable constants in one place: board/physics dimensions, peg types and layout
+// templates, scoring zones, combo/carry multiplier tuning, progression thresholds, carnival
+// palette, juice (camera shake/particles/flash) values, bonus ball rules, narrator timing,
+// stall detection, and the storage key. Playtest tuning should happen here, not in scene code.
 
 export const BOARD_WIDTH = 480;
 export const BOARD_HEIGHT = 720;
@@ -252,8 +255,8 @@ export const BONUS_BALLS = {
 };
 
 export const NARRATOR = {
-  minDropsBetweenLines: 5,
-  maxDropsBetweenLines: 8,
+  minDropsBetweenLines: 2,
+  maxDropsBetweenLines: 6,
   scoreThreshold: 3000, // placeholder — set from playtest data
 };
 

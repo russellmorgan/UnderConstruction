@@ -1,3 +1,6 @@
+// GameScene HUD chrome — builds the carnival backdrop, header plaques, hanging barker sign,
+// slot booth framing, and bottom scorekeeper rail. Purely presentational; owns no gameplay
+// state. Exports DEPTH bands: backdrop negative, play field 0, chrome 5-6, effects 15, ball 20.
 import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL, SLOTS } from '../config/gameConfig.js';
 import {
   bulbString,
@@ -21,6 +24,7 @@ export const DEPTH = { chrome: 5, label: 6, effect: 15, ball: 20 };
 // framing around the scoring slots, and a wooden scorekeeper's rail at the bottom.
 // Purely presentational — it owns no gameplay state.
 export default class GameHud {
+  // Build all HUD chrome: backdrop, header, barker sign, and bottom rail.
   constructor(scene) {
     this.scene = scene;
     this.createFieldBackdrop();
@@ -62,27 +66,29 @@ export default class GameHud {
     woodPost(posts, BOARD_WIDTH - 12, 0, 12, BOARD_HEIGHT);
   }
 
+  // Top chrome: valance, bulb string, board/target plaque on the left, ball count plaque on the right.
   createHeader() {
     const { scene } = this;
     valance(scene, 0, BOARD_WIDTH, 14, 24).setDepth(DEPTH.chrome);
     bulbString(scene, 0, 30, BOARD_WIDTH, 30, 11, 8).graphics.setDepth(DEPTH.chrome);
 
     const plaque = { top: CARNIVAL.wood, bottom: CARNIVAL.woodDark, radius: 5 };
-    signPanel(scene, 76, 60, 132, 46, plaque).setDepth(DEPTH.chrome);
-    this.boardText = signText(scene, 76, 50, '', 14, CARNIVAL.cream).setDepth(DEPTH.label);
-    this.targetText = signText(scene, 76, 70, '', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
+    signPanel(scene, 86, 30, 132, 54, plaque).setDepth(DEPTH.chrome);
+    this.boardText = signText(scene, 86, 23, '', 12, CARNIVAL.cream).setDepth(DEPTH.label);
+    this.targetText = signText(scene, 86, 37, '', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
 
-    signPanel(scene, BOARD_WIDTH - 76, 60, 132, 46, plaque).setDepth(DEPTH.chrome);
-    this.ballsText = signText(scene, BOARD_WIDTH - 76, 60, '', 16, CARNIVAL.goldText).setDepth(DEPTH.label);
+    signPanel(scene, BOARD_WIDTH - 86, 30, 132, 54, plaque).setDepth(DEPTH.chrome);
+    this.ballsText = signText(scene, BOARD_WIDTH - 86, 30, '', 16, CARNIVAL.goldText).setDepth(DEPTH.label);
   }
 
   // The narrator gets a hanging midway signboard rather than a dialogue box: chains
   // from the light string, painted board, and it only drops in when the barker talks.
+  // Hanging barker signboard: chains from the light string, painted panel, hidden until narrator speaks.
   createBarkerSign() {
     const { scene } = this;
-    const y = 99;
+    const y = Math.round(BOARD_HEIGHT / 2);
     this.barker = scene.add.container(BOARD_WIDTH / 2, y).setDepth(DEPTH.label).setAlpha(0);
-    this.barkerChains = chains(scene, BOARD_WIDTH / 2, 36, 200, 38).setDepth(DEPTH.chrome).setAlpha(0);
+    this.barkerChains = chains(scene, BOARD_WIDTH / 2, 36, 200, y - 27 - 36).setDepth(DEPTH.chrome).setAlpha(0);
 
     this.barker.add(signPanel(scene, 0, 0, 324, 54, { radius: 7 }));
     this.barkerLabel = signText(scene, 0, -16, 'THE BARKER SAYS', 9, CARNIVAL.goldText);
@@ -91,18 +97,21 @@ export default class GameHud {
   }
 
   // Fades the whole sign with the line so an empty board never hangs there blank.
+  // Fade the sign and chains in/out with the narrator text.
   setBarkerVisible(visible) {
     [this.barker, this.barkerChains].forEach((target) =>
       this.scene.tweens.add({ targets: target, alpha: visible ? 1 : 0, duration: 220 })
     );
   }
 
+  // Add the narrator's text object to the barker sign container.
   attachBarkerText(text) {
     this.barker.add(text.setPosition(0, 6));
   }
 
   // Booth chrome for the scoring slots: a striped awning above the row, a painted
   // fascia per slot tinted by its tier, and a counter plank below.
+  // Booth chrome for the scoring slot row: valance above, wood counter below, prize plates per slot.
   decorateSlots(slotY) {
     const { scene } = this;
     const { height, zones } = SLOTS;
@@ -133,6 +142,7 @@ export default class GameHud {
   }
 
   // Slot value labels, painted rather than plain — the top-tier slot gets marquee bulbs.
+  // Painted slot value label — top-tier slot breathes with a scale pulse tween.
   slotLabel(x, y, value, isTop) {
     const label = signText(this.scene, x, y, String(value), isTop ? 18 : 15, isTop ? CARNIVAL.goldText : CARNIVAL.cream)
       .setDepth(DEPTH.label);
@@ -151,6 +161,7 @@ export default class GameHud {
 
   // Scorekeeper's rail across the bottom: score on the left plaque, combo and carry
   // boost on the right, all on weathered wood.
+  // Wooden scorekeeper's rail at the bottom with a plaque for the running score.
   createBottomRail() {
     const { scene } = this;
     const railTop = BOARD_HEIGHT - 52;
@@ -163,11 +174,13 @@ export default class GameHud {
     signText(scene, 48, BOARD_HEIGHT - 26, 'TAKE', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
   }
 
+  // Update board number and earn-target display.
   updateBoard(level, target) {
     this.boardText.setText(`BOARD ${level}`);
     this.targetText.setText(`earn ${target}`);
   }
 
+  // Update the remaining ball count display.
   updateBalls(count) {
     this.ballsText.setText(`BALLS ${count}`);
   }

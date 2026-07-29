@@ -1,4 +1,5 @@
-// Barker lines. Voice: a midway barker who knows he's in a video game and has made
+// Barker dialogue data — three pools of lines (below-threshold, above-threshold, and fail/hazard)
+// voiced as a dry, fourth-wall-aware midway barker. NarratorSystem selects from these at runtime.
 // peace with it. Dry, sarcastic, needles the player without ever being cruel. The
 // fourth-wall break is the house style, not the rare exception.
 

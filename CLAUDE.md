@@ -8,13 +8,7 @@ A Pachinko/Galton-board style browser game ("drop your balls") built with Phaser
 
 ## Commands
 
-```
-npm run dev       # start Vite dev server
-npm run build      # production build to dist/
-npm run preview    # preview the production build
-```
-
-There is no test suite, linter, or type checker configured in this repo. Test functionality when possible but defer to user to test systems that rely on physics system as those are difficult to observe.
+Standard Vite scripts (`dev`/`build`/`preview`), plus `npm run test` (vitest, unit tests for the pure systems only). No linter or type checker. Defer to the user for anything physics-dependent — it's hard to verify without watching it run.
 
 ## Deployment
 

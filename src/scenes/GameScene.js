@@ -1,3 +1,12 @@
+// Core gameplay orchestrator — owns the Matter world, builds the peg field and slots,
+// wires together all systems (DropController, ScoreManager, ComboManager, BonusBallManager,
+// NarratorSystem, AudioFeedback), handles collision dispatch (peg hits / slot scoring /
+// hazard fails / floor safety net), manages ball-in-play lifecycle, stall watchdog, juice
+// feedback (particles, shake, flash, popups), and board advancement to BoardCleared or
+// Results scene when the session runs out of balls.
+//
+// A board's per-board earn threshold determines advancement:
+//   thresholdForLevel(level) = round(baseThreshold * thresholdGrowth^(level-1))
 import Phaser from 'phaser';
 import {
   BOARD_WIDTH,
@@ -22,10 +31,11 @@ import ComboManager from '../systems/ComboManager.js';
 import BonusBallManager from '../systems/BonusBallManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
 import AudioFeedback from '../systems/AudioFeedback.js';
-import { FAIL_LINES } from '../data/narratorLines.js';
+import { FAIL_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
 
 // Minimum score a player must EARN on a given board (not the running total) to
 // advance to the next board. Grows geometrically so later boards demand more.
+// Per-board earn target: grows geometrically so later boards demand more points to clear.
 export function thresholdForLevel(level) {
   return Math.round(PROGRESSION.baseThreshold * PROGRESSION.thresholdGrowth ** (level - 1));
 }
@@ -35,15 +45,14 @@ export default class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  // Carries progression across boards: a fresh board is just a scene restart with
-  // this data, so board selection (already random per createPegField call) needs no
-  // special handling here.
+  // Carry progression data (level, totalScore, carryMultiplier) across board restarts.
   init(data) {
     this.level = data?.level ?? 1;
     this.totalScore = data?.totalScore ?? 0;
     this.carryMultiplier = data?.carryMultiplier ?? CARRY.start;
   }
 
+  // Build the entire board: peg field, slots, floor, walls, HUD, all systems, collision listener, ESC handler.
   create() {
     this.ballsRemaining = SESSION.ballsPerSession;
     this.ballInPlay = false;
@@ -56,7 +65,7 @@ export default class GameScene extends Phaser.Scene {
     this.createFloor();
     this.createWalls();
 
-    const railStyle = { fontFamily: FONT_HUD, fontSize: '19px', color: CARNIVAL.goldText, fontStyle: 'bold' };
+    const railStyle = { fontFamily: FONT_HUD, fontSize: '16px', color: CARNIVAL.goldText, fontStyle: 'bold' };
     this.scoreManager = new ScoreManager(this, 74, BOARD_HEIGHT - 38, this.totalScore, {
       style: railStyle,
       label: null,
@@ -79,7 +88,7 @@ export default class GameScene extends Phaser.Scene {
     this.narrator.text.setOrigin(0.5);
     this.hud.attachBarkerText(this.narrator.text);
 
-    this.audioFeedback = new AudioFeedback();
+    this.audioFeedback = new AudioFeedback(this);
     this.updateBallsText();
     this.updateBoardText();
 
@@ -108,13 +117,23 @@ export default class GameScene extends Phaser.Scene {
     this.matter.world.on('collisionstart', (event) => this.handleCollisions(event));
 
     this.input.keyboard.on('keydown-ESC', () => this.pauseGame());
+    this.barkerSignVisible = false;
+    this.input.keyboard.on('keydown-S', () => {
+      this.barkerSignVisible = !this.barkerSignVisible;
+      this.hud.setBarkerVisible(this.barkerSignVisible);
+      if (this.barkerSignVisible) {
+        this.narrator.show(ABOVE_THRESHOLD_LINES[0]);
+      }
+    });
   }
 
+  // Pause physics/update and launch the PauseScene overlay.
   pauseGame() {
     this.scene.pause();
     this.scene.launch('PauseScene');
   }
 
+  // Build scoring-zone sensor bodies from SLOTS config, decorate them with booth chrome, track bounds for near-miss detection.
   createSlots() {
     const { height, zones } = SLOTS;
     const slotWidth = BOARD_WIDTH / zones.length;
@@ -155,12 +174,14 @@ export default class GameScene extends Phaser.Scene {
 
   // Safety net: catches a ball that reaches the bottom without ever registering
   // a scoring-slot collision (e.g. a sensor near-miss), so a drop can't softlock the session.
+  // Safety-net invisible sensor below the slots so a ball can never miss every collision.
   createFloor() {
     const floor = this.add.rectangle(BOARD_WIDTH / 2, BOARD_HEIGHT + 5, BOARD_WIDTH, 10, 0x000000, 0);
     this.matter.add.gameObject(floor, { isStatic: true, isSensor: true, label: 'floor' });
   }
 
   // Contains the ball within the board so it can't drift off the side and miss every sensor below.
+  // Invisible side walls to keep the ball within the board width.
   createWalls() {
     const wallThickness = 10;
     const left = this.add.rectangle(-wallThickness / 2, BOARD_HEIGHT / 2, wallThickness, BOARD_HEIGHT, 0x000000, 0);
@@ -169,6 +190,7 @@ export default class GameScene extends Phaser.Scene {
     this.matter.add.gameObject(right, { isStatic: true, label: 'wall' });
   }
 
+  // Create a Matter ball at the top of the board at the given x, disable input, reset stall detection.
   spawnBall(x) {
     if (this.ballInPlay || this.ballsRemaining <= 0) return;
 
@@ -194,6 +216,7 @@ export default class GameScene extends Phaser.Scene {
   // peg/slot/floor collision left to fire (e.g. balanced on an isolated peg on a
   // sparse template) — samples downward progress periodically and force-recovers
   // rather than letting a drop (and the whole session) hang forever.
+  // Frame-loop stall watchdog: samples ball Y progress and force-resolves if the ball gets stuck.
   update(time, delta) {
     if (!this.ballInPlay || !this.currentBall) return;
 
@@ -222,6 +245,7 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  // Collision dispatch: peg hits (score/carry/special popup/hazard fail), slot landings (resolve with combo/bonus), floor safety net.
   handleCollisions(event) {
     for (const pair of event.pairs) {
       if (!this.ballInPlay) return; // already resolved this ball this frame (e.g. straddling two slots)
@@ -243,10 +267,12 @@ export default class GameScene extends Phaser.Scene {
           this.carryMultiplier = Math.min(CARRY.max, this.carryMultiplier + carryBoost);
           this.updateCarryText();
         }
-        if (otherBody.gameObject.getData('isSpecial')) {
+        const isSpecial = otherBody.gameObject.getData('isSpecial');
+        if (isSpecial) {
           this.showSpecialPegPopup(otherBody.gameObject.x, otherBody.gameObject.y, points, carryBoost);
         }
-        this.audioFeedback.pegHit();
+        if (isSpecial) this.audioFeedback.specialPegHit();
+        else this.audioFeedback.pegHit();
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
       } else if (otherBody.label?.startsWith('slot-')) {
         this.checkNearMiss(ballBody.gameObject.x);
@@ -264,6 +290,7 @@ export default class GameScene extends Phaser.Scene {
   // Flags a "so close" moment when the ball lands one zone away from the top-value
   // zone but crossed close to that zone's boundary — not a precise trajectory check,
   // just a landing-x heuristic to keep the geometry simple.
+  // "So close!" narrator callout when the ball lands just outside the top-value zone.
   checkNearMiss(landingX) {
     const topBounds = this.slotBounds[this.topZoneIndex];
     const nearLeftEdge = Math.abs(landingX - topBounds.left) <= JUICE.nearMissMargin;
@@ -276,6 +303,7 @@ export default class GameScene extends Phaser.Scene {
   // The celebratory popup for a scoring (mult-tier) peg hit. Intensity (0 = bronze,
   // 1 = diamond) scales font size, color heat, and travel distance, so the rare
   // top-tier pegs feel like a bigger deal than the common ones.
+  // Animated reward-popup for mult-tier peg hits: intensity scales with carry-boost tier.
   showSpecialPegPopup(x, y, points, boost) {
     const { baseFontSize, maxFontSize, floatDistance, popInMs, holdMs, fadeMs, wobbleDegrees, colorLow, colorHigh } =
       JUICE.rewardPopup;
@@ -341,6 +369,7 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  // Generate a small white circle texture used by the particle emitter for score bursts and fail explosions.
   createParticleTexture() {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
     g.fillStyle(0xffffff, 1);
@@ -349,6 +378,7 @@ export default class GameScene extends Phaser.Scene {
     g.destroy();
   }
 
+  // Particle burst tinted by current combo multiplier (cool→hot).
   spawnScoreBurst(x, y, multiplier) {
     const { baseCount, countPerMultiplier, baseColor, hotColor } = JUICE.particle;
     const count = Math.round(baseCount + countPerMultiplier * (multiplier - 1));
@@ -363,6 +393,7 @@ export default class GameScene extends Phaser.Scene {
     this.scoreParticles.explode(count, x, y);
   }
 
+  // Score a slot landing: apply combo multiplier + carry boost, trigger juice feedback, evaluate bonus balls, finish the drop.
   resolveDrop(points, qualifies, grantsBonusBall) {
     const { appliedMultiplier, broke } = this.comboManager.registerLanding(qualifies);
     const awarded = Math.round(points * appliedMultiplier * this.carryMultiplier);
@@ -392,6 +423,7 @@ export default class GameScene extends Phaser.Scene {
   // A negative (hazard) peg ends the drop immediately instead of letting the ball keep
   // falling into a slot — the penalty is the whole outcome, not just a -20 deduction, so
   // the feedback has to sell "the ball is gone," not just "you lost a few points."
+  // Hazard peg collision: apply penalty, spawn fail juice (burst/shockwave/shake/flash/popup/narrator), finish the drop.
   failDrop(x, y, points) {
     this.scoreManager.add(points);
     this.showFailPopup(x, y);
@@ -400,13 +432,14 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.shake(JUICE.pegFail.shake.duration, JUICE.pegFail.shake.intensity);
     this.cameras.main.flash(JUICE.pegFail.flash.duration, ...JUICE.pegFail.flash.color);
     this.audioFeedback.ballPop();
-    this.sound.play('hit_hurt');
+    this.audioFeedback.deadBallHit();
     this.narrator.show(Phaser.Utils.Array.GetRandom(FAIL_LINES));
     this.finishBall();
   }
 
   // Two-tone (red/black) burst well above the reward-peg particle counts — this is the
   // one moment in the game meant to read as "explosion," not "sparkle."
+  // Two-tone red/black particle explosion for the hazard peg — deliberately over the top.
   spawnFailBurst(x, y) {
     const { count, colorCore, colorSpark } = JUICE.pegFail;
     this.scoreParticles.setParticleTint(colorCore);
@@ -415,6 +448,7 @@ export default class GameScene extends Phaser.Scene {
     this.scoreParticles.explode(Math.round(count * 0.4), x, y);
   }
 
+  // Expanding ring animation centred on the hazard peg impact point.
   spawnShockwave(x, y) {
     const { duration, startScale, endScale } = JUICE.pegFail.shockwave;
     const ring = this.add
@@ -435,6 +469,7 @@ export default class GameScene extends Phaser.Scene {
 
   // Shakes side-to-side rather than floating up — an impact tremor, not the celebratory
   // wobble used for reward pegs — so the two feel physically different, not just re-tinted.
+  // Shaking "POPPED!/BUSTED!/GONE!" text that shakes in place rather than floating — impact tremor, not celebration.
   showFailPopup(x, y) {
     const { fontSize, floatDistance, popInMs, holdMs, fadeMs, shakeAmplitude, shakeCount, color } =
       JUICE.pegFail.popup;
@@ -478,6 +513,7 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  // Clean up the current ball, decrement ball count, trigger narrator, and check for board-end.
   finishBall() {
     this.currentBall.destroy();
     this.currentBall = null;
@@ -496,6 +532,7 @@ export default class GameScene extends Phaser.Scene {
 
   // Reuses the existing juice-pass hooks (flash, particle burst) tinted green, plus a
   // narrator callout and the real "Powerup 5" cue, rather than a separate feedback system.
+  // Add extra balls to the session with green flash, particle burst, narrator callout, and powerup sound.
   awardBonusBalls(count, x, y) {
     this.ballsRemaining += count;
     this.cameras.main.flash(JUICE.bonusFlash.duration, ...JUICE.bonusFlash.color);
@@ -505,14 +542,17 @@ export default class GameScene extends Phaser.Scene {
     this.narrator.show('Free ball!');
   }
 
+  // Sync the HUD ball count.
   updateBallsText() {
     this.hud.updateBalls(this.ballsRemaining);
   }
 
+  // Sync the HUD board number and earn target.
   updateBoardText() {
     this.hud.updateBoard(this.level, this.boardTarget);
   }
 
+  // Sync the carry-multiplier display.
   updateCarryText() {
     this.carryText.setText(`BOOST ${this.carryMultiplier.toFixed(1)}x`);
   }
@@ -520,6 +560,7 @@ export default class GameScene extends Phaser.Scene {
   // Out of balls: advance to a new (randomly-shaped) board if this board's earnings
   // met its target, carrying the running total and carry multiplier forward. Otherwise
   // the run ends here.
+  // Session out of balls: check per-board earnings against target, advance or exit.
   endBoard() {
     this.dropController.setEnabled(false);
     const earned = this.scoreManager.score - this.boardStartScore;

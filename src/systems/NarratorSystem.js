@@ -1,3 +1,5 @@
+// Timed on-screen commentary — fires random barker lines at irregular intervals (based on
+// drop count) from two pools (below/above score threshold), auto-clears after 3s.
 import Phaser from 'phaser';
 import { NARRATOR } from '../config/gameConfig.js';
 import { BELOW_THRESHOLD_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
@@ -20,11 +22,13 @@ export default class NarratorSystem {
     this.hideTimer = null;
   }
 
+  // Roll a random number of drops before the next line fires (within NARRATOR bounds).
   rollNextTrigger() {
     const { minDropsBetweenLines, maxDropsBetweenLines } = NARRATOR;
     return Phaser.Math.Between(minDropsBetweenLines, maxDropsBetweenLines);
   }
 
+  // Count drops; fire a line when the trigger count is reached, picking from the appropriate pool.
   onDrop(currentScore) {
     this.dropCount++;
     if (this.dropCount < this.nextTrigger) return;
@@ -37,6 +41,7 @@ export default class NarratorSystem {
     this.show(line);
   }
 
+  // Display a line and schedule its auto-clear after 3 seconds.
   show(line) {
     this.text.setText(line);
     this.onChange?.(line);

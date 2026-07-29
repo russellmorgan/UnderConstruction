@@ -1,3 +1,5 @@
+// Game entry point — creates the Phaser instance with Matter physics, registers all scenes,
+// and exposes a dev-only global handle for console jumping during development.
 import Phaser from 'phaser';
 import { BOARD_WIDTH, BOARD_HEIGHT, PHYSICS } from './config/gameConfig.js';
 import BootScene from './scenes/BootScene.js';
