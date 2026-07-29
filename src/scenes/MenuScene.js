@@ -31,7 +31,7 @@ export default class MenuScene extends Phaser.Scene {
   create() {
     tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT);
     valance(this, 0, BOARD_WIDTH, 26, 30);
-    bulbString(this, 0, 52, BOARD_WIDTH, 52, 14, 16);
+    bulbString(this, 0, 52, BOARD_WIDTH, 52, 14, 24);
 
     this.createTitleSign();
     this.createHighScoreStub();

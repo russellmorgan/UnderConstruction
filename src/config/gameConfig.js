@@ -171,8 +171,8 @@ export const CARNIVAL = {
   gold: 0xf2b134,
   goldLight: 0xffd97a,
   wire: 0x3a2a1a,
-  bulbOn: 0xfff3c4,
-  bulbRadius: 3.5,
+  bulbOn: 0xffffff,
+  bulbRadius: 4.2,
   ink: 0x2a1108,
   boardTop: 0x1b1026,
   boardBottom: 0x0d0714,
@@ -189,18 +189,18 @@ export const CARNIVAL = {
   greenText: '#8fe08a',
   // idle animation
   swayDegrees: 1.4,
-  swayDuration: 2600,
-  flickerMin: 900,
+  swayDuration: 2000,
+  flickerMin: 600,
   flickerMax: 2200,
 };
 
 export const JUICE = {
   shake: {
-    peg: { duration: 40, intensity: 0.002 },
+    peg: { duration: 40, intensity: 0.003 },
     score: { duration: 120, intensity: 0.004 }, // multiplied by current multiplier at call time
   },
   particle: {
-    baseCount: 8,
+    baseCount: 16,
     countPerMultiplier: 4,
     baseColor: 0x00d9ff,
     hotColor: 0xffe14d,
@@ -211,12 +211,12 @@ export const JUICE = {
   // (gold at low tiers, icy diamond-white at max) rather than an arbitrary hot color,
   // so the popup and the peg always agree about what "better" looks like.
   rewardPopup: {
-    baseFontSize: 22,
-    maxFontSize: 38,
-    floatDistance: 70,
+    baseFontSize: 18,
+    maxFontSize: 28,
+    floatDistance: 90,
     popInMs: 240,
     holdMs: 500,
-    fadeMs: 550,
+    fadeMs: 240,
     wobbleDegrees: 5,
     colorLow: 0xffe14d,
     colorHigh: 0xbdfaff,
@@ -257,7 +257,7 @@ export const BONUS_BALLS = {
 export const NARRATOR = {
   minDropsBetweenLines: 2,
   maxDropsBetweenLines: 6,
-  scoreThreshold: 3000, // placeholder — set from playtest data
+  scoreThreshold: 1000, // placeholder — set from playtest data
 };
 
 export const SESSION = {
@@ -274,6 +274,6 @@ export const BALL_STALL = {
   nudgeAfter: 1200, // ms with no progress before applying a one-time horizontal nudge
   forceResolveAfter: 3200, // ms with no progress before giving up and resolving as a floor hit
   nudgeSpeed: 3, // horizontal speed applied by the nudge
-};
+}; 
 
 export const STORAGE_KEY = 'midway-drop:highScore';

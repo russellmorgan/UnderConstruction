@@ -90,10 +90,21 @@ export default class GameHud {
     this.barker = scene.add.container(BOARD_WIDTH / 2, y).setDepth(DEPTH.label).setAlpha(0);
     this.barkerChains = chains(scene, BOARD_WIDTH / 2, 36, 200, y - 38 - 36).setDepth(DEPTH.chrome).setAlpha(0);
 
-    this.barker.add(signPanel(scene, 0, 0, 324, 86, { radius: 7 }));
+    this.barkerPanel = signPanel(scene, 0, 0, 324, 86, { radius: 7 });
+    this.barker.add(this.barkerPanel);
     this.barkerLabel = signText(scene, 0, -20, 'THE BARKER SAYS', 13, CARNIVAL.goldText);
     this.barker.add(this.barkerLabel);
     sway(scene, this.barker, 0.9);
+  }
+
+  // Recolor the barker sign panel: solid panelRedDark when below threshold,
+  // default red gradient when at or above threshold.
+  setBarkerBelowThreshold(below) {
+    this.barkerPanel.destroy();
+    const top = below ? CARNIVAL.panelRedDark : CARNIVAL.panelRed;
+    const bottom = below ? CARNIVAL.panelRedDark : CARNIVAL.panelRedDark;
+    this.barkerPanel = signPanel(this.scene, 0, 0, 324, 86, { radius: 7, top, bottom });
+    this.barker.addAt(this.barkerPanel, 0);
   }
 
   // Fades the whole sign with the line so an empty board never hangs there blank.

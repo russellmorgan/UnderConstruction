@@ -20,6 +20,7 @@ import {
   PROGRESSION,
   CARRY,
   CARNIVAL,
+  NARRATOR,
   RESULTS,
 } from '../config/gameConfig.js';
 import GameHud, { DEPTH } from '../ui/GameHud.js';
@@ -84,7 +85,12 @@ export default class GameScene extends Phaser.Scene {
 
     this.narrator = new NarratorSystem(this, 0, 0, 292, {
       style: { fontFamily: FONT_HUD, fontSize: '14px', color: CARNIVAL.cream, align: 'center' },
-      onChange: (line) => this.hud.setBarkerVisible(Boolean(line)),
+      onChange: (line) => {
+        this.hud.setBarkerVisible(Boolean(line));
+        if (line) {
+          this.hud.setBarkerBelowThreshold(this.totalScore < NARRATOR.scoreThreshold);
+        }
+      },
     });
     this.narrator.text.setOrigin(0.5);
     this.hud.attachBarkerText(this.narrator.text);
