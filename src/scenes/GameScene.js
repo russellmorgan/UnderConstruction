@@ -31,6 +31,7 @@ import ComboManager from '../systems/ComboManager.js';
 import BonusBallManager from '../systems/BonusBallManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
 import AudioFeedback from '../systems/AudioFeedback.js';
+import { isMusicOn } from '../systems/AudioSettings.js';
 import { FAIL_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
 
 // Minimum score a player must EARN on a given board (not the running total) to
@@ -113,6 +114,26 @@ export default class GameScene extends Phaser.Scene {
       .setDepth(DEPTH.effect);
 
     this.dropController = new DropController(this, (x) => this.spawnBall(x));
+
+    if (isMusicOn()) {
+      this.gameMusic = this.sound.add('game_music', { loop: true, volume: 0.2 });
+      this.gameMusic.play();
+    }
+    this.events.on('resume', () => {
+      if (isMusicOn() && !this.gameMusic?.isPlaying) {
+        this.gameMusic = this.sound.add('game_music', { loop: true, volume: 0.2 });
+        this.gameMusic.play();
+      } else if (!isMusicOn() && this.gameMusic?.isPlaying) {
+        this.gameMusic.stop();
+        this.gameMusic = null;
+      }
+    });
+    this.events.on('shutdown', () => {
+      if (this.gameMusic) {
+        this.gameMusic.stop();
+        this.gameMusic = null;
+      }
+    });
 
     this.matter.world.on('collisionstart', (event) => this.handleCollisions(event));
 
