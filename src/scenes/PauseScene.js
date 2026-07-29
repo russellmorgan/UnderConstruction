@@ -23,10 +23,16 @@ export default class PauseScene extends Phaser.Scene {
     sign.add(signText(this, 0, 18, 'the board will wait', 11, CARNIVAL.cream));
     sway(this, sign);
 
-    ticketButton(this, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 20, 200, 50, 'BACK IN', () => this.resume(), {
+    ticketButton(this, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 20, 200, 50, 'BACK IN', () => {
+      this.sound.play('menu_btn');
+      this.resume();
+    }, {
       notchColor: 0x0b0710,
     });
-    ticketButton(this, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 92, 170, 42, 'MIDWAY', () => this.goToMenu(), {
+    ticketButton(this, BOARD_WIDTH / 2, BOARD_HEIGHT / 2 + 92, 170, 42, 'MIDWAY', () => {
+      this.sound.play('menu_btn');
+      this.goToMenu();
+    }, {
       fontSize: 17,
       notchColor: 0x0b0710,
     });

@@ -47,10 +47,12 @@ export default class MenuScene extends Phaser.Scene {
       252,
       67,
       'START GAME',
-      () =>
+      () => {
+        this.sound.play('menu_btn');
         this.fadeMusicOut(() =>
           this.scene.start('GameScene', { level: 1, totalScore: 0, carryMultiplier: CARRY.start })
-        ),
+        );
+      },
       { fontSize: 24, textShadow: false, letterSpacing: 2, textColor: '#ffffff' }
     );
     this.createAudioToggles(618);

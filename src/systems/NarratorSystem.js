@@ -51,4 +51,12 @@ export default class NarratorSystem {
       this.onChange?.('');
     });
   }
+
+  // Immediately clear the current line and hide the sign, cancelling the pending auto-hide.
+  clear() {
+    if (this.hideTimer) this.hideTimer.remove();
+    this.hideTimer = null;
+    this.text.setText('');
+    this.onChange?.('');
+  }
 }

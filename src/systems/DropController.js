@@ -28,6 +28,9 @@ export default class DropController {
       scene.input.on('pointermove', this.handleMove, this);
       scene.input.on('pointerup', this.handleRelease, this);
     }
+
+    this.onKeySpace = () => this.handleRelease();
+    scene.input.keyboard.on('keydown-SPACE', this.onKeySpace);
   }
 
   // An auto-sweeping tween for timed-drop mode — bounces left-right on a sine ease.
@@ -93,10 +96,10 @@ export default class DropController {
     this.indicator.x = this.x;
   }
 
-  // Confirm the drop at the current x position. Used by both modes.
+  // Confirm the drop at the current x position. Used by pointer and keyboard (space) triggers.
   handleRelease(pointer) {
     if (!this.enabled) return;
-    if (!this.timed) {
+    if (pointer && !this.timed) {
       this.x = this.clamp(pointer.x);
       this.indicator.x = this.x;
     }
@@ -116,6 +119,9 @@ export default class DropController {
 
   // Tear down input listeners and tweens. Called when the scene shuts down.
   destroy() {
+    if (this.scene.input.keyboard) {
+      this.scene.input.keyboard.off('keydown-SPACE', this.onKeySpace);
+    }
     if (this.timed) {
       this.scene.input.off('pointerdown', this.handleRelease, this);
     } else {

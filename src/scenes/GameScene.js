@@ -82,7 +82,7 @@ export default class GameScene extends Phaser.Scene {
     this.bonusBalls = new BonusBallManager(this.totalScore);
 
     this.narrator = new NarratorSystem(this, 0, 0, 292, {
-      style: { fontFamily: FONT_HUD, fontSize: '12px', color: CARNIVAL.cream, align: 'center' },
+      style: { fontFamily: FONT_HUD, fontSize: '14px', color: CARNIVAL.cream, align: 'center' },
       onChange: (line) => this.hud.setBarkerVisible(Boolean(line)),
     });
     this.narrator.text.setOrigin(0.5);
@@ -192,6 +192,7 @@ export default class GameScene extends Phaser.Scene {
 
   // Create a Matter ball at the top of the board at the given x, disable input, reset stall detection.
   spawnBall(x) {
+    this.narrator.clear();
     if (this.ballInPlay || this.ballsRemaining <= 0) return;
 
     this.ballInPlay = true;

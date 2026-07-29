@@ -26,7 +26,7 @@ export const PEG_FIELD = {
 // Experimental drop style: when enabled, the drop indicator sweeps back and forth on
 // its own and the player just times a tap/click/space to release — no drag-to-aim.
 export const TIMED_DROP = {
-  enabled: false,
+  enabled: true,
   sweepMs: 1400, // time for one full left-to-right sweep
 };
 
@@ -133,7 +133,7 @@ export const COMBO = {
 // game total carries across boards, but the gate is per-board earnings.
 // thresholdForLevel(level) = round(baseThreshold * thresholdGrowth^(level-1))
 export const PROGRESSION = {
-  baseThreshold: 8000, // board 1 minimum earned to advance
+  baseThreshold: 20000, // board 1 minimum earned to advance
   thresholdGrowth: 1.6, // × per board: 8000, 12800, 20480, 32768, ...
 };
 

@@ -86,12 +86,12 @@ export default class GameHud {
   // Hanging barker signboard: chains from the light string, painted panel, hidden until narrator speaks.
   createBarkerSign() {
     const { scene } = this;
-    const y = Math.round(BOARD_HEIGHT / 2);
+    const y = Math.round(BOARD_HEIGHT / 2 - 100);
     this.barker = scene.add.container(BOARD_WIDTH / 2, y).setDepth(DEPTH.label).setAlpha(0);
-    this.barkerChains = chains(scene, BOARD_WIDTH / 2, 36, 200, y - 27 - 36).setDepth(DEPTH.chrome).setAlpha(0);
+    this.barkerChains = chains(scene, BOARD_WIDTH / 2, 36, 200, y - 38 - 36).setDepth(DEPTH.chrome).setAlpha(0);
 
-    this.barker.add(signPanel(scene, 0, 0, 324, 54, { radius: 7 }));
-    this.barkerLabel = signText(scene, 0, -16, 'THE BARKER SAYS', 9, CARNIVAL.goldText);
+    this.barker.add(signPanel(scene, 0, 0, 324, 86, { radius: 7 }));
+    this.barkerLabel = signText(scene, 0, -20, 'THE BARKER SAYS', 13, CARNIVAL.goldText);
     this.barker.add(this.barkerLabel);
     sway(scene, this.barker, 0.9);
   }
@@ -100,13 +100,13 @@ export default class GameHud {
   // Fade the sign and chains in/out with the narrator text.
   setBarkerVisible(visible) {
     [this.barker, this.barkerChains].forEach((target) =>
-      this.scene.tweens.add({ targets: target, alpha: visible ? 1 : 0, duration: 220 })
+      this.scene.tweens.add({ targets: target, alpha: visible ? 1 : 0, duration: 420 })
     );
   }
 
   // Add the narrator's text object to the barker sign container.
   attachBarkerText(text) {
-    this.barker.add(text.setPosition(0, 6));
+    this.barker.add(text.setPosition(0, 8));
   }
 
   // Booth chrome for the scoring slots: a striped awning above the row, a painted
@@ -177,7 +177,7 @@ export default class GameHud {
   // Update board number and earn-target display.
   updateBoard(level, target) {
     this.boardText.setText(`BOARD ${level}`);
-    this.targetText.setText(`earn ${target}`);
+    this.targetText.setText(`EARN ${target}`);
   }
 
   // Update the remaining ball count display.
