@@ -1,3 +1,6 @@
+// Timed interstitial between boards — shows a "BOARD CLEARED" splash with the running
+// score, then auto-transitions to the next GameScene (incremented level, carried score
+// and carry multiplier) after BOARD_CLEARED.delayMs.
 import Phaser from 'phaser';
 import { BOARD_WIDTH, BOARD_HEIGHT, BOARD_CLEARED, CARNIVAL } from '../config/gameConfig.js';
 import { bulbString, marqueeFrame, signPanel, signText, sway, tentBackdrop, valance } from '../ui/carnival.js';
@@ -10,12 +13,14 @@ export default class BoardClearedScene extends Phaser.Scene {
     super('BoardClearedScene');
   }
 
+  // Receive level, totalScore, and carryMultiplier passed through from GameScene.
   init(data) {
     this.level = data?.level ?? 1;
     this.totalScore = data?.totalScore ?? 0;
     this.carryMultiplier = data?.carryMultiplier ?? 1;
   }
 
+  // Build the "BOARD CLEARED" splash and schedule the auto-transition to the next GameScene.
   create() {
     tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT);
     valance(this, 0, BOARD_WIDTH, 26, 30);

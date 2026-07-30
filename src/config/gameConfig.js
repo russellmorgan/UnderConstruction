@@ -1,4 +1,7 @@
-// Tunable constants. Edit freely during playtesting — no code restructuring needed.
+// All tunable constants in one place: board/physics dimensions, peg types and layout
+// templates, scoring zones, combo/carry multiplier tuning, progression thresholds, carnival
+// palette, juice (camera shake/particles/flash) values, bonus ball rules, narrator timing,
+// stall detection, and the storage key. Playtest tuning should happen here, not in scene code.
 
 export const BOARD_WIDTH = 480;
 export const BOARD_HEIGHT = 720;
@@ -23,7 +26,7 @@ export const PEG_FIELD = {
 // Experimental drop style: when enabled, the drop indicator sweeps back and forth on
 // its own and the player just times a tap/click/space to release — no drag-to-aim.
 export const TIMED_DROP = {
-  enabled: false,
+  enabled: true,
   sweepMs: 1400, // time for one full left-to-right sweep
 };
 
@@ -57,7 +60,7 @@ export const PEG_TEMPLATES = [
   },
   {
     id: 'zigzag',
-    rows: ['XXXXXX....', '.XXXXXX...', '..XXXXXX..', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', '....XXXXXX', '...XXXXXX.'],
+    rows: ['.XXXXXX.X.', '..XX.XXX.X.', '..XXXXXX..', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', '....XXXXXX', '...XXXXXX.'],
   },
   {
     id: 'checkerboard',
@@ -97,11 +100,11 @@ export const PEG_TEMPLATES = [
 // which is why no reward tier is red or black.
 export const PEG_TYPES = [
   { id: 'base', score: 5, color: 0xb98a4b, restitution: 0.7, friction: 0, frictionStatic: 0, count: 'rest' },
-  { id: 'mult2', scoreMultiplier: 2, color: 0xb5732f, ring: 0x7a4a1e, glow: 0.55, restitution: 0.8, friction: 0, frictionStatic: 0, count: 2 }, // bronze
+  { id: 'mult2', scoreMultiplier: 2, color: 0xb5732f, ring: 0x7a4a1e, glow: 0.85, restitution: 0.8, friction: 0, frictionStatic: 0, count: 4 }, // bronze
   { id: 'mult3', scoreMultiplier: 3, color: 0xcdd7e0, ring: 0x8b97a3, glow: 0.7, restitution: 0.85, friction: 0, frictionStatic: 0, count: 2 }, // silver
   { id: 'mult4', scoreMultiplier: 4, color: 0xf2b134, ring: 0xad7a10, glow: 0.9, restitution: 0.9, friction: 0, frictionStatic: 0, count: 2 }, // gold
   { id: 'mult5', scoreMultiplier: 5, color: 0xa8e8ff, ring: 0x5fd0f2, glow: 1.15, restitution: 0.95, friction: 0, frictionStatic: 0, count: 2 }, // diamond
-  { id: 'penalty', score: -20, color: 0x1a1414, hazard: true, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 1 },
+  { id: 'penalty', score: -20, color: 0x1a1414, hazard: true, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 3 },
 ];
 
 export const SLOTS = {
@@ -130,7 +133,7 @@ export const COMBO = {
 // game total carries across boards, but the gate is per-board earnings.
 // thresholdForLevel(level) = round(baseThreshold * thresholdGrowth^(level-1))
 export const PROGRESSION = {
-  baseThreshold: 8000, // board 1 minimum earned to advance
+  baseThreshold: 20000, // board 1 minimum earned to advance
   thresholdGrowth: 1.6, // × per board: 8000, 12800, 20480, 32768, ...
 };
 
@@ -168,8 +171,8 @@ export const CARNIVAL = {
   gold: 0xf2b134,
   goldLight: 0xffd97a,
   wire: 0x3a2a1a,
-  bulbOn: 0xfff3c4,
-  bulbRadius: 3.5,
+  bulbOn: 0xffffff,
+  bulbRadius: 4.2,
   ink: 0x2a1108,
   boardTop: 0x1b1026,
   boardBottom: 0x0d0714,
@@ -186,18 +189,18 @@ export const CARNIVAL = {
   greenText: '#8fe08a',
   // idle animation
   swayDegrees: 1.4,
-  swayDuration: 2600,
-  flickerMin: 900,
+  swayDuration: 2000,
+  flickerMin: 600,
   flickerMax: 2200,
 };
 
 export const JUICE = {
   shake: {
-    peg: { duration: 40, intensity: 0.002 },
+    peg: { duration: 40, intensity: 0.003 },
     score: { duration: 120, intensity: 0.004 }, // multiplied by current multiplier at call time
   },
   particle: {
-    baseCount: 8,
+    baseCount: 16,
     countPerMultiplier: 4,
     baseColor: 0x00d9ff,
     hotColor: 0xffe14d,
@@ -208,12 +211,12 @@ export const JUICE = {
   // (gold at low tiers, icy diamond-white at max) rather than an arbitrary hot color,
   // so the popup and the peg always agree about what "better" looks like.
   rewardPopup: {
-    baseFontSize: 22,
-    maxFontSize: 38,
-    floatDistance: 70,
+    baseFontSize: 18,
+    maxFontSize: 28,
+    floatDistance: 90,
     popInMs: 240,
     holdMs: 500,
-    fadeMs: 550,
+    fadeMs: 240,
     wobbleDegrees: 5,
     colorLow: 0xffe14d,
     colorHigh: 0xbdfaff,
@@ -252,9 +255,9 @@ export const BONUS_BALLS = {
 };
 
 export const NARRATOR = {
-  minDropsBetweenLines: 5,
-  maxDropsBetweenLines: 8,
-  scoreThreshold: 3000, // placeholder — set from playtest data
+  minDropsBetweenLines: 2,
+  maxDropsBetweenLines: 6,
+  scoreThreshold: 1000, // placeholder — set from playtest data
 };
 
 export const SESSION = {
@@ -271,6 +274,6 @@ export const BALL_STALL = {
   nudgeAfter: 1200, // ms with no progress before applying a one-time horizontal nudge
   forceResolveAfter: 3200, // ms with no progress before giving up and resolving as a floor hit
   nudgeSpeed: 3, // horizontal speed applied by the nudge
-};
+}; 
 
 export const STORAGE_KEY = 'midway-drop:highScore';

@@ -4,7 +4,13 @@ A Pachinko/Galton-board browser game ("drop your balls"). See [README.md](README
 
 ## Testing
 
+A Pachinko/Galton-board style browser game ("drop your balls") built with Phaser 4 + Matter physics and Vite. See [README.md](README.md) for gameplay rules (scoring zones, combo multiplier, bonus balls, near misses).
+
 `npm test` runs the vitest suite (`src/systems/*.test.js`). No linter or type checker is configured. Systems that depend on Matter physics are hard to observe programmatically — defer those to the user to playtest.
+
+## Commands
+
+Standard Vite scripts (`dev`/`build`/`preview`), plus `npm run test` (vitest, unit tests for the pure systems only).
 
 ## Deployment
 

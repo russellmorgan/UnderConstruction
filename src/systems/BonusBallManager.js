@@ -1,3 +1,5 @@
+// Bonus ball evaluator — three independent sources (outer-zone landing, score-threshold
+// crossing, combo-tier milestone) all drawing from a shared per-session cap.
 import { BONUS_BALLS } from '../config/gameConfig.js';
 
 // Tracks the three bonus-ball sources (zone, score threshold, combo milestone) against
@@ -14,14 +16,17 @@ export default class BonusBallManager {
     this.comboMilestoneAwarded = false;
   }
 
+  // True when the session cap on bonus balls has been hit.
   get capReached() {
     return this.awardedCount >= BONUS_BALLS.maxPerSession;
   }
 
+  // How many more bonus balls can be awarded this session.
   remainingCapacity() {
     return Math.max(0, BONUS_BALLS.maxPerSession - this.awardedCount);
   }
 
+  // Award one bonus ball if the landing zone qualifies and the cap hasn't been reached.
   evaluateZone(grantsBonusBall) {
     if (!grantsBonusBall || this.capReached) return 0;
     this.awardedCount += 1;
@@ -32,6 +37,7 @@ export default class BonusBallManager {
   // capacity. Thresholds crossed while capped are still marked as seen so they can't
   // be re-awarded once the cap frees up (it never does within a session, but this keeps
   // the bookkeeping correct regardless).
+  // Award one bonus ball per newly-crossed score interval, capped by remaining capacity.
   evaluateScoreThreshold(currentScore) {
     const totalCrossed = Math.floor(currentScore / BONUS_BALLS.scoreInterval);
     const newlyCrossed = totalCrossed - this.scoreThresholdsCrossed;
@@ -46,6 +52,7 @@ export default class BonusBallManager {
   // Fires once per session the first time the multiplier reaches comboTier — the flag
   // is set on first reach regardless of cap state, so a later reset-and-rebuild to the
   // same tier can never re-trigger it.
+  // Award one bonus ball the first time the combo multiplier reaches comboTier in a session.
   evaluateComboMilestone(currentMultiplier) {
     if (this.comboMilestoneAwarded || currentMultiplier < BONUS_BALLS.comboTier) return 0;
     this.comboMilestoneAwarded = true;

@@ -1,12 +1,17 @@
+// Procedural carnival/midway UI kit — all visuals are Graphics, text, and tweens with zero
+// image assets. Shared by every screen: tent backdrop, valances, bulb strings, marquee
+// frames, sign panels, ticket-stub/toggle buttons, peg texture generators (enamel dome
+// tiers + spiked hazard mine), wood posts, vignette, hanging chains, and sway animations.
 import Phaser from 'phaser';
 import { CARNIVAL } from '../config/gameConfig.js';
 
 // Procedural carnival/midway UI kit. No image assets: everything here is Graphics,
 // text and tweens. Shared by every UI surface so the three screens read as one show.
 
-export const FONT_SIGN = 'Georgia, "Times New Roman", serif';
-export const FONT_HUD = 'monospace';
+export const FONT_SIGN = '"Rye", Georgia, "Times New Roman", serif';
+export const FONT_HUD = '"Work Sans", sans-serif';
 
+// Linear interpolation between two hex colors (t: 0-1).
 export function lerpColor(from, to, t) {
   const c = Phaser.Display.Color.Interpolate.ColorWithColor(
     Phaser.Display.Color.ValueToColor(from),
@@ -17,12 +22,14 @@ export function lerpColor(from, to, t) {
   return Phaser.Display.Color.GetColor(c.r, c.g, c.b);
 }
 
+// Lighten (positive amount) or darken (negative amount) a hex color.
 export function shade(color, amount) {
   return amount >= 0 ? lerpColor(color, 0xffffff, amount) : lerpColor(color, 0x000000, -amount);
 }
 
 // Phaser's fillGradientStyle behaves differently per renderer, so gradients here are
 // just stacked strips — same look, no renderer surprises.
+// Render a vertical colour gradient as stacked rect strips (renderer-independent).
 export function gradientRect(g, x, y, w, h, top, bottom, steps = 14) {
   const stepH = h / steps;
   for (let i = 0; i < steps; i++) {
@@ -31,14 +38,16 @@ export function gradientRect(g, x, y, w, h, top, bottom, steps = 14) {
   }
 }
 
-// Painted sign lettering: heavy serif, dark outline, drop shadow.
+// Painted sign lettering: heavy display face, dark outline, drop shadow. Rye is
+// already a heavy weight with no real bold face, so unlike the old Georgia default
+// this doesn't force fontStyle: 'bold' (that would just synthetically double-stroke it).
+// Painted sign text: display face, dark stroke, drop shadow. Centered origin.
 export function signText(scene, x, y, label, size, color = CARNIVAL.goldText, extra = {}) {
   return scene.add
     .text(x, y, label, {
       fontFamily: FONT_SIGN,
       fontSize: `${size}px`,
       color,
-      fontStyle: 'bold',
       stroke: CARNIVAL.inkText,
       strokeThickness: Math.max(2, Math.round(size * 0.14)),
       ...extra,
@@ -47,6 +56,7 @@ export function signText(scene, x, y, label, size, color = CARNIVAL.goldText, ex
     .setShadow(0, 3, 'rgba(0,0,0,0.45)', 4, false, true);
 }
 
+// Plain sans-serif HUD text for body copy and descriptions.
 export function hudText(scene, x, y, label, size = 13, color = CARNIVAL.cream) {
   return scene.add.text(x, y, label, {
     fontFamily: FONT_HUD,
@@ -57,6 +67,7 @@ export function hudText(scene, x, y, label, size = 13, color = CARNIVAL.cream) {
 
 // "Inside the big top": night gradient with faint canvas panels radiating from a
 // vanishing point above the board.
+// Full-screen tent interior: night gradient, faint canvas wedges radiating from a vanishing point, wood sill at the bottom.
 export function tentBackdrop(scene, width, height) {
   const g = scene.add.graphics();
   gradientRect(g, 0, 0, width, height, CARNIVAL.night, CARNIVAL.nightDeep, 18);
@@ -80,6 +91,7 @@ export function tentBackdrop(scene, width, height) {
 
 // Striped awning strip with a scalloped lower edge — the single most "midway" shape
 // available without art, so it anchors the top of every screen.
+// Striped awning valance with a scalloped lower edge and a shadow strip below.
 export function valance(scene, y, width, depth = 18, stripe = 24) {
   const g = scene.add.graphics();
   const r = stripe / 2;
@@ -95,6 +107,7 @@ export function valance(scene, y, width, depth = 18, stripe = 24) {
   return g;
 }
 
+// Compute a point along a quadratic bezier curve for the sagging wire between two points.
 function swagPoint(x1, y1, x2, y2, sag, t) {
   const cx = (x1 + x2) / 2;
   const cy = (y1 + y2) / 2 + sag * 2;
@@ -107,6 +120,7 @@ function swagPoint(x1, y1, x2, y2, sag, t) {
 
 // Swagged string lights. Each bulb flickers on its own clock so the string never
 // pulses in lockstep (which reads as a loading spinner, not a fairground).
+// Swagged string of flickering bulbs between two points. Each bulb has its own random flicker clock.
 export function bulbString(scene, x1, y1, x2, y2, count = 12, sag = 14) {
   const g = scene.add.graphics();
   g.lineStyle(2, CARNIVAL.wire, 1);
@@ -137,6 +151,7 @@ export function bulbString(scene, x1, y1, x2, y2, count = 12, sag = 14) {
 }
 
 // Chasing marquee bulbs around a rectangle — the "this is the headline" treatment.
+// Chasing marquee bulbs positioned around a rectangle, with staggered phase delays.
 export function marqueeFrame(scene, x, y, w, h, spacing = 22) {
   const bulbs = [];
   const points = [];
@@ -168,6 +183,7 @@ export function marqueeFrame(scene, x, y, w, h, spacing = 22) {
 }
 
 // Painted board on a gold frame: shadow, frame, gradient field, hairline inlay, rivets.
+// Painted sign board on a gold frame: drop shadow, outer frame, inner gradient field, hairline inlay, corner rivets.
 export function signPanel(scene, x, y, w, h, opts = {}) {
   const top = opts.top ?? CARNIVAL.panelRed;
   const bottom = opts.bottom ?? CARNIVAL.panelRedDark;
@@ -202,12 +218,15 @@ export function signPanel(scene, x, y, w, h, opts = {}) {
 }
 
 // Ticket-stub button: perforated stub on the left, notched edges, painted label.
+// Interactive ticket-stub button: perforated left stub, notched edges, gradient fill, hover/click tweens, and the inner draw(lit) render loop.
 export function ticketButton(scene, x, y, w, h, label, onClick, opts = {}) {
   const notchColor = opts.notchColor ?? CARNIVAL.nightDeep;
+  const color = opts.color ?? CARNIVAL.gold;
   const container = scene.add.container(x, y);
   const g = scene.add.graphics();
-  const text = signText(scene, 6, 0, label, opts.fontSize ?? 20, CARNIVAL.inkText);
+  const text = signText(scene, 6, 0, label, opts.fontSize ?? 20, opts.textColor ?? CARNIVAL.inkText);
   if (opts.textShadow === false) text.setShadow(0, 0, '#000', 0, false, false);
+  if (opts.letterSpacing) text.setLetterSpacing(opts.letterSpacing);
   container.add([g, text]);
 
   const draw = (hot) => {
@@ -218,7 +237,7 @@ export function ticketButton(scene, x, y, w, h, label, onClick, opts = {}) {
     g.fillStyle(0x000000, 0.4);
     g.fillRoundedRect(left + 2, top + 4, w, h, 6);
 
-    gradientRect(g, left, top, w, h, hot ? CARNIVAL.goldLight : CARNIVAL.gold, hot ? CARNIVAL.gold : 0xd89526, 10);
+    gradientRect(g, left, top, w, h, hot ? shade(color, 0.25) : color, hot ? color : shade(color, -0.15), 10);
 
     // notched ticket edges
     g.fillStyle(notchColor, 1);
@@ -260,6 +279,7 @@ export function ticketButton(scene, x, y, w, h, label, onClick, opts = {}) {
 // A ticketButton that flips between two states on click (e.g. an ON/OFF setting).
 // isOn reads current state, onToggle applies the flip; the button re-renders itself
 // each click rather than mutating ticketButton's internals.
+// Two-state toggle built from ticketButton: re-renders with the current label each time it's toggled.
 export function toggleButton(scene, x, y, w, h, labelFor, isOn, onToggle, opts = {}) {
   let current;
   const render = () => {
@@ -268,12 +288,14 @@ export function toggleButton(scene, x, y, w, h, labelFor, isOn, onToggle, opts =
       onToggle();
       render();
     }, opts);
+    current.setAlpha(isOn() ? 1 : 0.8);
   };
   render();
   return { destroy: () => current.destroy() };
 }
 
 // Gentle hanging-sign sway. Anything on a chain or a hook gets one of these.
+// Gentle idle sway oscillation — applied to hanging signs and banners.
 export function sway(scene, target, degrees = CARNIVAL.swayDegrees) {
   scene.tweens.add({
     targets: target,
@@ -292,6 +314,7 @@ export const PEG_TEXTURE_SCALE = 1 / PEG_SS;
 
 // A midway peg: shaded enamel dome, dark seat beneath, optional brass ring and glow for
 // the scoring tiers, and a specular highlight so it reads as hardware rather than a dot.
+// Generate a supersampled peg texture: shaded enamel dome, dark seat, optional ring/glow for reward tiers, specular highlight.
 export function makePegTexture(scene, key, color, opts = {}) {
   if (scene.textures.exists(key)) return key;
 
@@ -341,6 +364,7 @@ export function makePegTexture(scene, key, color, opts = {}) {
 // as real hazard signage, just carnival-painted. The pulsing halo and shiver that make
 // it hard to miss from across the board are live tweens on the peg/companion glow in
 // PegField, not part of this static texture.
+// Generate the hazard-peg texture: spiked mine silhouette, black/yellow stripe collar, red core, painted "!" mark.
 export function makeHazardPegTexture(scene, key, opts = {}) {
   if (scene.textures.exists(key)) return key;
 
@@ -416,6 +440,7 @@ export function makeHazardPegTexture(scene, key, opts = {}) {
 
 // Weathered upright post — the board's side frame. Grain ticks and brass bolts keep it
 // from reading as a flat brown bar.
+// Weathered upright post with grain ticks and brass bolt details (side-of-board frame).
 export function woodPost(g, x, y, w, h) {
   gradientRect(g, x, y, w, h, CARNIVAL.wood, CARNIVAL.woodDark, 6);
   g.fillStyle(shade(CARNIVAL.wood, 0.25), 0.5);
@@ -432,6 +457,7 @@ export function woodPost(g, x, y, w, h) {
 
 // Edge falloff so the eye settles on the middle of the board. Stacked alpha bands
 // rather than a radial gradient, for the same renderer-independence as gradientRect.
+// Vignette edge-darkening via stacked alpha bands — draws the eye to board centre.
 export function vignette(scene, w, h, strength = 0.55, depth = 110) {
   const g = scene.add.graphics();
   const steps = 12;
@@ -449,6 +475,7 @@ export function vignette(scene, w, h, strength = 0.55, depth = 110) {
 }
 
 // Two chains from a rail down to a sign, drawn as linked ticks.
+// Two chains hanging from a rail to a sign, drawn as linked dashed ticks.
 export function chains(scene, x, y, spread, length) {
   const g = scene.add.graphics();
   g.lineStyle(2, CARNIVAL.wire, 1);
