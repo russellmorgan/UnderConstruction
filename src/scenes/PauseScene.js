@@ -47,7 +47,7 @@ export default class PauseScene extends Phaser.Scene {
       (on) => `SOUND: ${on ? 'ON' : 'OFF'}`,
       isSoundOn,
       () => {
-        this.sound.mute = !toggleSound();
+        toggleSound();
       },
       { fontSize: 12, notchColor: 0x0b0710, textShadow: false }
     );

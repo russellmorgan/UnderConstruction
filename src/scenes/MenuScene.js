@@ -81,13 +81,10 @@ export default class MenuScene extends Phaser.Scene {
       .on('pointerup', () => this.clearHighScore());
   }
 
-  // SOUND toggles Phaser's sound manager (shared game-wide) and the raw-oscillator
-  // AudioFeedback tones together. MUSIC gates the intro track loop below.
   // Build SOUND and MUSIC toggle buttons and sync their initial states.
   createAudioToggles(y) {
-    this.sound.mute = !isSoundOn();
     toggleButton(this, BOARD_WIDTH / 2 - 76, y, 132, 38, (on) => `SOUND: ${on ? 'ON' : 'OFF'}`, isSoundOn, () => {
-      this.sound.mute = !toggleSound();
+      toggleSound();
     }, { fontSize: 12, textShadow: false, textColor: '#ffffff' });
     toggleButton(this, BOARD_WIDTH / 2 + 88, y, 132, 38, (on) => `MUSIC: ${on ? 'ON' : 'OFF'}`, isMusicOn, () => {
       const on = toggleMusic();
