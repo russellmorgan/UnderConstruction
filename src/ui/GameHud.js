@@ -155,8 +155,17 @@ export default class GameHud {
   // Slot value labels, painted rather than plain — the top-tier slot gets marquee bulbs.
   // Painted slot value label — top-tier slot breathes with a scale pulse tween.
   slotLabel(x, y, value, isTop) {
-    const label = signText(this.scene, x, y, String(value), isTop ? 18 : 15, isTop ? CARNIVAL.goldText : CARNIVAL.cream)
-      .setDepth(DEPTH.label);
+    const isText = typeof value === 'string';
+    const fontSize = isText ? 12 : isTop ? 18 : 15;
+    const label = signText(
+      this.scene,
+      x,
+      y,
+      String(value),
+      fontSize,
+      isTop ? CARNIVAL.goldText : CARNIVAL.cream,
+      isText ? { align: 'center' } : {},
+    ).setDepth(DEPTH.label);
     if (isTop) {
       this.scene.tweens.add({
         targets: label,
@@ -170,8 +179,8 @@ export default class GameHud {
     return label;
   }
 
-  // Scorekeeper's rail across the bottom: score on the left plaque, combo and carry
-  // boost on the right, all on weathered wood.
+  // Scorekeeper's rail across the bottom: score on the left plaque, carry boost on the
+  // right, all on weathered wood.
   // Wooden scorekeeper's rail at the bottom with a plaque for the running score.
   createBottomRail() {
     const { scene } = this;

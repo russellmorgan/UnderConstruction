@@ -1,5 +1,5 @@
 // Core gameplay orchestrator — owns the Matter world, builds the peg field and slots,
-// wires together all systems (DropController, ScoreManager, ComboManager, BonusBallManager,
+// wires together all systems (DropController, ScoreManager, BonusBallManager,
 // NarratorSystem, AudioFeedback), handles collision dispatch (peg hits / slot scoring /
 // hazard fails / floor safety net), manages ball-in-play lifecycle, stall watchdog, juice
 // feedback (particles, shake, flash, popups), and board advancement to BoardCleared or
@@ -15,7 +15,6 @@ import {
   SLOTS,
   SESSION,
   JUICE,
-  COMBO,
   BALL_STALL,
   PROGRESSION,
   CARRY,
@@ -28,7 +27,6 @@ import { FONT_HUD, FONT_SIGN, lerpColor } from '../ui/carnival.js';
 import { createPegField } from '../systems/PegField.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
-import ComboManager from '../systems/ComboManager.js';
 import BonusBallManager from '../systems/BonusBallManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
 import AudioFeedback from '../systems/AudioFeedback.js';
@@ -74,13 +72,6 @@ export default class GameScene extends Phaser.Scene {
     });
     this.scoreManager.text.setDepth(DEPTH.label);
 
-    this.comboManager = new ComboManager(this, BOARD_WIDTH - 12, BOARD_HEIGHT - 46, {
-      fontFamily: FONT_HUD,
-      fontSize: '13px',
-      color: CARNIVAL.cream,
-    });
-    this.comboManager.text.setOrigin(1, 0).setDepth(DEPTH.label);
-
     this.bonusBalls = new BonusBallManager(this.totalScore);
 
     this.narrator = new NarratorSystem(this, 0, 0, 292, {
@@ -100,7 +91,7 @@ export default class GameScene extends Phaser.Scene {
     this.updateBoardText();
 
     this.carryText = this.add
-      .text(BOARD_WIDTH - 12, BOARD_HEIGHT - 28, '', {
+      .text(BOARD_WIDTH - 12, BOARD_HEIGHT - 46, '', {
         fontFamily: FONT_HUD,
         fontSize: '13px',
         color: CARNIVAL.goldText,
@@ -144,14 +135,26 @@ export default class GameScene extends Phaser.Scene {
     this.matter.world.on('collisionstart', (event) => this.handleCollisions(event));
 
     this.input.keyboard.on('keydown-ESC', () => this.pauseGame());
-    this.barkerSignVisible = false;
-    this.input.keyboard.on('keydown-S', () => {
-      this.barkerSignVisible = !this.barkerSignVisible;
-      this.hud.setBarkerVisible(this.barkerSignVisible);
-      if (this.barkerSignVisible) {
-        this.narrator.show(ABOVE_THRESHOLD_LINES[0]);
-      }
-    });
+
+    // ponytail: import.meta.env.DEV is Vite's build-time flag — false in `npm run build`,
+    // so these design-preview shortcuts never ship. Bump when adding more debug screens.
+    if (import.meta.env.DEV) {
+      this.barkerSignVisible = false;
+      this.input.keyboard.on('keydown-S', () => {
+        this.barkerSignVisible = !this.barkerSignVisible;
+        this.hud.setBarkerVisible(this.barkerSignVisible);
+        if (this.barkerSignVisible) {
+          this.narrator.show(ABOVE_THRESHOLD_LINES[0]);
+        }
+      });
+      this.input.keyboard.on('keydown-B', () => {
+        this.scene.start('BoardClearedScene', {
+          level: this.level,
+          totalScore: this.totalScore,
+          carryMultiplier: this.carryMultiplier,
+        });
+      });
+    }
   }
 
   // Pause physics/update and launch the PauseScene overlay.
@@ -173,19 +176,18 @@ export default class GameScene extends Phaser.Scene {
     const topValue = Math.max(...zones.map((z) => z.value));
     this.hud.decorateSlots(y);
 
-    zones.forEach(({ value, comboQualifies, grantsBonusBall }, i) => {
+    zones.forEach(({ value, label, grantsBonusBall }, i) => {
       const x = slotWidth * i + slotWidth / 2;
       // Booth fill warms toward gold with the tier so the prize slots read at a glance.
       const fill = lerpColor(CARNIVAL.nightDeep, CARNIVAL.panelRed, (value / topValue) * 0.85);
       const zone = this.add.rectangle(x, y, slotWidth - 2, height, fill).setStrokeStyle(1, CARNIVAL.wood);
-      this.hud.slotLabel(x, y - 8, value, value === topValue);
+      this.hud.slotLabel(x, y - 8, label ?? value, value === topValue);
 
       this.matter.add.gameObject(zone, {
         isStatic: true,
         isSensor: true,
         label: `slot-${value}`,
       });
-      zone.setData('comboQualifies', comboQualifies);
       zone.setData('grantsBonusBall', grantsBonusBall);
 
       const left = slotWidth * i;
@@ -264,7 +266,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.stalledMs += BALL_STALL.checkInterval;
     if (this.stalledMs >= BALL_STALL.forceResolveAfter) {
-      this.resolveDrop(0, false, false);
+      this.resolveDrop(0, false);
     } else if (this.stalledMs >= BALL_STALL.nudgeAfter && !this.stallNudged) {
       this.stallNudged = true;
       const body = this.currentBall.body;
@@ -273,7 +275,7 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  // Collision dispatch: peg hits (score/carry/special popup/hazard fail), slot landings (resolve with combo/bonus), floor safety net.
+  // Collision dispatch: peg hits (score/carry/special popup/hazard fail), slot landings (resolve with bonus), floor safety net.
   handleCollisions(event) {
     for (const pair of event.pairs) {
       if (!this.ballInPlay) return; // already resolved this ball this frame (e.g. straddling two slots)
@@ -304,13 +306,9 @@ export default class GameScene extends Phaser.Scene {
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
       } else if (otherBody.label?.startsWith('slot-')) {
         this.checkNearMiss(ballBody.gameObject.x);
-        this.resolveDrop(
-          Number(otherBody.label.split('-')[1]),
-          otherBody.gameObject.getData('comboQualifies'),
-          otherBody.gameObject.getData('grantsBonusBall')
-        );
+        this.resolveDrop(Number(otherBody.label.split('-')[1]), otherBody.gameObject.getData('grantsBonusBall'));
       } else if (otherBody.label === 'floor') {
-        this.resolveDrop(0, false, false);
+        this.resolveDrop(0, false);
       }
     }
   }
@@ -406,11 +404,11 @@ export default class GameScene extends Phaser.Scene {
     g.destroy();
   }
 
-  // Particle burst tinted by current combo multiplier (cool→hot).
+  // Particle burst tinted by current carry multiplier (cool→hot).
   spawnScoreBurst(x, y, multiplier) {
     const { baseCount, countPerMultiplier, baseColor, hotColor } = JUICE.particle;
     const count = Math.round(baseCount + countPerMultiplier * (multiplier - 1));
-    const heat = (multiplier - 1) / (COMBO.max - 1);
+    const heat = (multiplier - 1) / (CARRY.max - 1);
     const color = Phaser.Display.Color.Interpolate.ColorWithColor(
       Phaser.Display.Color.ValueToColor(baseColor),
       Phaser.Display.Color.ValueToColor(hotColor),
@@ -421,26 +419,19 @@ export default class GameScene extends Phaser.Scene {
     this.scoreParticles.explode(count, x, y);
   }
 
-  // Score a slot landing: apply combo multiplier + carry boost, trigger juice feedback, evaluate bonus balls, finish the drop.
-  resolveDrop(points, qualifies, grantsBonusBall) {
-    const { appliedMultiplier, broke } = this.comboManager.registerLanding(qualifies);
-    const awarded = Math.round(points * appliedMultiplier * this.carryMultiplier);
+  // Score a slot landing: apply carry boost, trigger juice feedback, evaluate bonus balls, finish the drop.
+  resolveDrop(points, grantsBonusBall) {
+    const awarded = Math.round(points * this.carryMultiplier);
     this.scoreManager.add(awarded);
 
     if (points > 0) {
-      this.spawnScoreBurst(this.currentBall.x, this.currentBall.y, appliedMultiplier);
-      this.cameras.main.shake(JUICE.shake.score.duration, JUICE.shake.score.intensity * appliedMultiplier);
-      this.audioFeedback.scoreHit(Math.round((appliedMultiplier - 1) / COMBO.step));
-    }
-    if (broke) {
-      this.cameras.main.flash(JUICE.comboBreakFlash.duration, ...JUICE.comboBreakFlash.color);
-      this.audioFeedback.comboBreak();
+      this.spawnScoreBurst(this.currentBall.x, this.currentBall.y, this.carryMultiplier);
+      this.cameras.main.shake(JUICE.shake.score.duration, JUICE.shake.score.intensity * this.carryMultiplier);
+      this.audioFeedback.scoreHit(this.carryMultiplier - 1);
     }
 
     const bonusCount =
-      this.bonusBalls.evaluateZone(grantsBonusBall) +
-      this.bonusBalls.evaluateScoreThreshold(this.scoreManager.score) +
-      this.bonusBalls.evaluateComboMilestone(this.comboManager.multiplier);
+      this.bonusBalls.evaluateZone(grantsBonusBall) + this.bonusBalls.evaluateScoreThreshold(this.scoreManager.score);
     if (bonusCount > 0) {
       this.awardBonusBalls(bonusCount, this.currentBall.x, this.currentBall.y);
     }
@@ -567,7 +558,6 @@ export default class GameScene extends Phaser.Scene {
     this.scoreParticles.setParticleTint(Phaser.Display.Color.GetColor(...JUICE.bonusFlash.color));
     this.scoreParticles.explode(JUICE.bonusParticleCount * count, x, y);
     this.sound.play('powerup_5');
-    this.narrator.show('Free ball!');
   }
 
   // Sync the HUD ball count.

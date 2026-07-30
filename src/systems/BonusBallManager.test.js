@@ -27,18 +27,4 @@ describe('BonusBallManager', () => {
     expect(mgr.evaluateScoreThreshold(500)).toBe(0);
     expect(mgr.evaluateScoreThreshold(1000)).toBe(1);
   });
-
-  it('fires the combo milestone once, on first reach of the tier', () => {
-    const mgr = new BonusBallManager();
-    expect(mgr.evaluateComboMilestone(2)).toBe(0);
-    expect(mgr.evaluateComboMilestone(3)).toBe(1);
-    expect(mgr.evaluateComboMilestone(3)).toBe(0);
-  });
-
-  it('marks the combo milestone seen even if capped, without double counting', () => {
-    const mgr = new BonusBallManager();
-    for (let i = 0; i < 5; i++) mgr.evaluateZone(true);
-    expect(mgr.evaluateComboMilestone(3)).toBe(0);
-    expect(mgr.awardedCount).toBe(5);
-  });
 });

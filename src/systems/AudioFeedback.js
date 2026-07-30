@@ -1,5 +1,5 @@
 // Sound cue dispatcher — mixes pre-recorded samples (peg hits via Phaser sound) with
-// procedural Web Audio oscillator tones (score cues, combo break, ball pop). Game logic
+// procedural Web Audio oscillator tones (score cues, ball pop). Game logic
 // calls named methods, never touches sound.play() or oscillators directly.
 import { isSoundOn } from './AudioSettings.js';
 
@@ -8,8 +8,8 @@ import { isSoundOn } from './AudioSettings.js';
 const PLANK_HIT_KEYS = ['impact_plank_0', 'impact_plank_1', 'impact_plank_2', 'impact_plank_3', 'impact_plank_4'];
 
 // Mix of real sample playback (peg hits) and procedural Web Audio oscillators
-// (score/combo cues) — isolated here so game logic only ever calls
-// pegHit()/specialPegHit()/deadBallHit()/scoreHit()/comboBreak() and never touches
+// (score cues) — isolated here so game logic only ever calls
+// pegHit()/specialPegHit()/deadBallHit()/scoreHit() and never touches
 // sound.play() or oscillators directly.
 export default class AudioFeedback {
   // Store the scene for Phaser sound access; AudioContext created lazily.
@@ -66,15 +66,10 @@ export default class AudioFeedback {
     this.scene.sound.play('hit_hurt', { volume: 0.7 });
   }
 
-  // comboStep: 0, 1, 2... — pitch rises with each consecutive combo step.
-  // Rising-pitch triangle tone: pitch increases with combo step.
-  scoreHit(comboStep = 0) {
-    this.tone(660 + comboStep * 110, 0.18, { type: 'triangle', gain: 0.18 });
-  }
-
-  // Low sawtooth tone to signal a combo streak was broken.
-  comboBreak() {
-    this.tone(180, 0.3, { type: 'sawtooth', gain: 0.15 });
+  // carryStep: 0, 1, 2... — pitch rises with the carry multiplier.
+  // Rising-pitch triangle tone: pitch increases with carry multiplier.
+  scoreHit(carryStep = 0) {
+    this.tone(660 + carryStep * 110, 0.18, { type: 'triangle', gain: 0.18 });
   }
 
   // Descending pitch rather than a fixed tone — reads as a deflate/pop, layered under

@@ -1,5 +1,5 @@
 // All tunable constants in one place: board/physics dimensions, peg types and layout
-// templates, scoring zones, combo/carry multiplier tuning, progression thresholds, carnival
+// templates, scoring zones, carry multiplier tuning, progression thresholds, carnival
 // palette, juice (camera shake/particles/flash) values, bonus ball rules, narrator timing,
 // stall detection, and the storage key. Playtest tuning should happen here, not in scene code.
 
@@ -109,23 +109,17 @@ export const PEG_TYPES = [
 
 export const SLOTS = {
   height: 60,
-  // comboQualifies: true only for the higher-value zones — landing in a gutter/low zone breaks the streak.
   // grantsBonusBall: the outer edge zones — lowest-probability landings on a Galton-board-shaped
   // distribution funneling toward center — so a bonus ball there feels earned, not free.
   zones: [
-    { value: 100, comboQualifies: false, grantsBonusBall: true },
-    { value: 500, comboQualifies: false, grantsBonusBall: false },
-    { value: 1000, comboQualifies: true, grantsBonusBall: false },
-    { value: 5000, comboQualifies: true, grantsBonusBall: false },
-    { value: 1000, comboQualifies: true, grantsBonusBall: false },
-    { value: 500, comboQualifies: false, grantsBonusBall: false },
-    { value: 100, comboQualifies: false, grantsBonusBall: true },
+    { value: 0, label: 'FREE\nBALL', grantsBonusBall: true },
+    { value: 500, grantsBonusBall: false },
+    { value: 1000, grantsBonusBall: false },
+    { value: 5000, grantsBonusBall: false },
+    { value: 1000, grantsBonusBall: false },
+    { value: 500, grantsBonusBall: false },
+    { value: 0, label: 'FREE\nBALL', grantsBonusBall: true },
   ],
-};
-
-export const COMBO = {
-  step: 0.5,
-  max: 3,
 };
 
 // Endless-board progression. Each board is a fresh random shape; the player advances
@@ -147,9 +141,9 @@ export const RESULTS = {
   delayMs: 3000,
 };
 
-// Carry multiplier: a durable, stacking multiplier collected from mult pegs. Separate
-// from the fragile per-board COMBO streak — carry persists across boards and only ever
-// climbs (capped), rewarding players who deliberately collect mult pegs.
+// Carry multiplier: a durable, stacking multiplier collected from mult pegs. Persists
+// across boards and only ever climbs (capped), rewarding players who deliberately
+// collect mult pegs. The sole multiplier applied to slot scoring.
 export const CARRY = {
   start: 1, // multiplier at game start
   stepPerTier: 0.1, // added per (scoreMultiplier - 1) when a mult peg is hit: mult2 +0.1 ... mult5 +0.4
@@ -205,7 +199,6 @@ export const JUICE = {
     baseColor: 0x00d9ff,
     hotColor: 0xffe14d,
   },
-  comboBreakFlash: { duration: 180, color: [255, 60, 60] },
   // Reward-tier (mult peg) popup: scales with the peg's carry-boost tier (0 = bronze,
   // 1 = diamond). Color rides the same warm→cool ladder as the peg palette itself
   // (gold at low tiers, icy diamond-white at max) rather than an arbitrary hot color,
@@ -250,7 +243,6 @@ export const JUICE = {
 
 export const BONUS_BALLS = {
   scoreInterval: 500,
-  comboTier: 3,
   maxPerSession: 5,
 };
 
