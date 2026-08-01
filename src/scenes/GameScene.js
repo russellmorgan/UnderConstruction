@@ -7,6 +7,10 @@
 //
 // A board's per-board earn threshold determines advancement:
 //   thresholdForLevel(level) = round(baseThreshold * thresholdGrowth^(level-1))
+// Scoring runs through a sublinear CarryMultiplier: only a fraction of a slot's raw
+// points reflects the carry boost (payoutFraction), only half the boost survives into
+// the next board (carryOverFraction), and repeat hits on the same peg this board taper
+// off (repeatHitFactor) so no single board can grind the multiplier straight to its cap.
 import Phaser from 'phaser';
 import {
   BOARD_WIDTH,
@@ -25,6 +29,7 @@ import {
 import GameHud, { DEPTH } from '../ui/GameHud.js';
 import { FONT_HUD, FONT_SIGN, lerpColor } from '../ui/carnival.js';
 import { createPegField } from '../systems/PegField.js';
+import CarryMultiplier from '../systems/CarryMultiplier.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
 import BonusBallManager from '../systems/BonusBallManager.js';
@@ -45,11 +50,13 @@ export default class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  // Carry progression data (level, totalScore, carryMultiplier) across board restarts.
+  // Carry progression data (level, totalScore, carry multiplier state) across board
+  // restarts. The wire format for carryMultiplier stays a plain number — only the
+  // in-scene representation is wrapped in a CarryMultiplier instance.
   init(data) {
     this.level = data?.level ?? 1;
     this.totalScore = data?.totalScore ?? 0;
-    this.carryMultiplier = data?.carryMultiplier ?? CARRY.start;
+    this.carry = new CarryMultiplier(data?.carryMultiplier ?? CARRY.start);
   }
 
   // Build the entire board: peg field, slots, floor, walls, HUD, all systems, collision listener, ESC handler.
@@ -66,13 +73,13 @@ export default class GameScene extends Phaser.Scene {
     this.createWalls();
 
     const railStyle = { fontFamily: FONT_HUD, fontSize: '16px', color: CARNIVAL.goldText, fontStyle: 'bold' };
-    this.scoreManager = new ScoreManager(this, 74, BOARD_HEIGHT - 38, this.totalScore, {
+    this.scoreManager = new ScoreManager(this, 74, BOARD_HEIGHT - 26, this.totalScore, {
       style: railStyle,
       label: null,
     });
-    this.scoreManager.text.setDepth(DEPTH.label);
+    this.scoreManager.text.setOrigin(0, 0.5).setDepth(DEPTH.label);
 
-    this.bonusBalls = new BonusBallManager(this.totalScore);
+    this.bonusBalls = new BonusBallManager(this.boardTarget);
 
     this.narrator = new NarratorSystem(this, 0, 0, 292, {
       style: { fontFamily: FONT_HUD, fontSize: '14px', color: CARNIVAL.cream, align: 'center' },
@@ -91,12 +98,12 @@ export default class GameScene extends Phaser.Scene {
     this.updateBoardText();
 
     this.carryText = this.add
-      .text(BOARD_WIDTH - 12, BOARD_HEIGHT - 46, '', {
-        fontFamily: FONT_HUD,
+      .text(BOARD_WIDTH - 12, BOARD_HEIGHT - 26, '', {
+        fontFamily: FONT_SIGN,
         fontSize: '13px',
         color: CARNIVAL.goldText,
       })
-      .setOrigin(1, 0)
+      .setOrigin(1, 0.5)
       .setDepth(DEPTH.label);
     this.updateCarryText();
 
@@ -151,7 +158,7 @@ export default class GameScene extends Phaser.Scene {
         this.scene.start('BoardClearedScene', {
           level: this.level,
           totalScore: this.totalScore,
-          carryMultiplier: this.carryMultiplier,
+          carryMultiplier: this.carry.value,
         });
       });
     }
@@ -293,13 +300,18 @@ export default class GameScene extends Phaser.Scene {
         }
         this.scoreManager.add(points);
         const carryBoost = otherBody.gameObject.getData('carryBoost');
+        // Diminishing returns on repeat hits of the same peg this board — without this,
+        // pegs (never destroyed) let one lucky bounce grind the carry cap out solo.
+        let applied = 0;
         if (carryBoost > 0) {
-          this.carryMultiplier = Math.min(CARRY.max, this.carryMultiplier + carryBoost);
-          this.updateCarryText();
+          const hits = otherBody.gameObject.getData('hits');
+          applied = this.carry.applyBoost(carryBoost, hits);
+          otherBody.gameObject.setData('hits', hits + 1);
+          if (applied > 0) this.updateCarryText();
         }
         const isSpecial = otherBody.gameObject.getData('isSpecial');
         if (isSpecial) {
-          this.showSpecialPegPopup(otherBody.gameObject.x, otherBody.gameObject.y, points, carryBoost);
+          this.showSpecialPegPopup(otherBody.gameObject.x, otherBody.gameObject.y, points, applied);
         }
         if (isSpecial) this.audioFeedback.specialPegHit();
         else this.audioFeedback.pegHit();
@@ -419,19 +431,22 @@ export default class GameScene extends Phaser.Scene {
     this.scoreParticles.explode(count, x, y);
   }
 
-  // Score a slot landing: apply carry boost, trigger juice feedback, evaluate bonus balls, finish the drop.
+  // Score a slot landing: payout runs through the carry multiplier sublinearly
+  // (only payoutFraction of the boost applies), trigger juice feedback, evaluate
+  // bonus balls against this board's earnings, finish the drop.
   resolveDrop(points, grantsBonusBall) {
-    const awarded = Math.round(points * this.carryMultiplier);
+    const awarded = this.carry.payout(points);
     this.scoreManager.add(awarded);
 
     if (points > 0) {
-      this.spawnScoreBurst(this.currentBall.x, this.currentBall.y, this.carryMultiplier);
-      this.cameras.main.shake(JUICE.shake.score.duration, JUICE.shake.score.intensity * this.carryMultiplier);
-      this.audioFeedback.scoreHit(this.carryMultiplier - 1);
+      this.spawnScoreBurst(this.currentBall.x, this.currentBall.y, this.carry.value);
+      this.cameras.main.shake(JUICE.shake.score.duration, JUICE.shake.score.intensity * this.carry.value);
+      this.audioFeedback.scoreHit(this.carry.value - 1);
     }
 
     const bonusCount =
-      this.bonusBalls.evaluateZone(grantsBonusBall) + this.bonusBalls.evaluateScoreThreshold(this.scoreManager.score);
+      this.bonusBalls.evaluateZone(grantsBonusBall) +
+      this.bonusBalls.evaluateScoreThreshold(this.scoreManager.score - this.boardStartScore);
     if (bonusCount > 0) {
       this.awardBonusBalls(bonusCount, this.currentBall.x, this.currentBall.y);
     }
@@ -572,12 +587,13 @@ export default class GameScene extends Phaser.Scene {
 
   // Sync the carry-multiplier display.
   updateCarryText() {
-    this.carryText.setText(`BOOST ${this.carryMultiplier.toFixed(1)}x`);
+    this.carryText.setText(`BOOST ${this.carry.value.toFixed(1)}x`);
   }
 
   // Out of balls: advance to a new (randomly-shaped) board if this board's earnings
-  // met its target, carrying the running total and carry multiplier forward. Otherwise
-  // the run ends here.
+  // met its target, carrying the running total forward and the carry multiplier
+  // forward at half its excess (carryOverFraction) so one hot board can't coast the
+  // whole run. Otherwise the run ends here.
   // Session out of balls: check per-board earnings against target, advance or exit.
   endBoard() {
     this.dropController.setEnabled(false);
@@ -587,7 +603,7 @@ export default class GameScene extends Phaser.Scene {
       this.scene.start('BoardClearedScene', {
         level: this.level,
         totalScore: this.scoreManager.score,
-        carryMultiplier: this.carryMultiplier,
+        carryMultiplier: this.carry.carryOver(),
       });
     } else {
       this.time.delayedCall(RESULTS.delayMs, () => {

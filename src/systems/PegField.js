@@ -1,7 +1,7 @@
 // Peg field builder — picks a random template (and may mirror it), assigns peg types
 // (base, mult tiers, hazard) weighted by PEG_TYPES counts, builds Matter static bodies
 // for collision, and adds visual tells (glow/shiver) to hazard pegs.
-import { BOARD_WIDTH, CARNIVAL, CARRY, PEG_FIELD, PEG_TEMPLATES, PEG_TYPES, PHYSICS } from '../config/gameConfig.js';
+import { BOARD_WIDTH, CARNIVAL, CARRY, DEV_FORCE_TEMPLATE_ID, PEG_FIELD, PEG_TEMPLATES, PEG_TYPES, PHYSICS } from '../config/gameConfig.js';
 import { PEG_TEXTURE_SCALE, makeHazardPegTexture, makePegTexture } from '../ui/carnival.js';
 
 const BASE_TYPE = PEG_TYPES.find((t) => t.count === 'rest');
@@ -38,16 +38,25 @@ function carryBoostFor(type) {
   return type.scoreMultiplier ? (type.scoreMultiplier - 1) * CARRY.stepPerTier : 0;
 }
 
-// Pick a random board silhouette template.
+// Pick a board silhouette template — DEV_FORCE_TEMPLATE_ID pins it to one id (falls
+// back to random with a console warning if the id doesn't match any template);
+// otherwise a random template is picked each call.
 function pickTemplate() {
+  if (DEV_FORCE_TEMPLATE_ID) {
+    const forced = PEG_TEMPLATES.find((t) => t.id === DEV_FORCE_TEMPLATE_ID);
+    if (forced) return forced;
+    console.warn(`DEV_FORCE_TEMPLATE_ID "${DEV_FORCE_TEMPLATE_ID}" matches no PEG_TEMPLATES id; using random.`);
+  }
   return PEG_TEMPLATES[Math.floor(Math.random() * PEG_TEMPLATES.length)];
 }
 
 // Mirrors the boolean mask itself (row-by-row string reversal) rather than mirroring
 // already-computed pixel positions, which would also need to correct for the
 // per-row stagger offset.
-// 50% chance to mirror the template left-to-right (string reversal per row).
+// 50% chance to mirror the template left-to-right (string reversal per row); skipped
+// while DEV_FORCE_TEMPLATE_ID is pinning the board so iteration stays deterministic.
 function maybeMirror(rows) {
+  if (DEV_FORCE_TEMPLATE_ID) return rows;
   if (Math.random() >= 0.5) return rows;
   return rows.map((row) => row.split('').reverse().join(''));
 }
@@ -104,11 +113,29 @@ function addHazardTells(scene, peg, x, y) {
 
 // Staggered grid: alternating rows offset by half spacing. Only cells marked 'X' in
 // the chosen template get a peg, so the board's silhouette varies game to game.
-// Build the full peg grid: pick/mirror template, compute positions, assign types, stamp textures, add Matter bodies.
+// Templates aren't guaranteed left/right-symmetric (row lengths vary per template, and
+// mirroring reverses them independently) — anchoring purely from a fixed left margin
+// left lopsided templates (e.g. pyramid) visibly shifted off board-center with a wide,
+// unguarded gap down one side. Instead: find the template's own raw bounding box, then
+// shift the whole grid so that box centers on BOARD_WIDTH, regardless of its shape.
+// Build the full peg grid: pick/mirror template, center it, assign types, stamp textures, add Matter bodies.
 export function createPegField(scene) {
   const pegs = [];
   const { rows, spacingX, spacingY, topMargin, sideMargin } = PEG_FIELD;
   const template = maybeMirror(pickTemplate().rows);
+
+  let rawMinX = Infinity;
+  let rawMaxX = -Infinity;
+  for (let row = 0; row < rows; row++) {
+    const offset = row % 2 === 0 ? 0 : spacingX / 2;
+    for (let col = 0; col < template[row].length; col++) {
+      if (template[row][col] !== 'X') continue;
+      const rawX = offset + col * spacingX;
+      if (rawX < rawMinX) rawMinX = rawX;
+      if (rawX > rawMaxX) rawMaxX = rawX;
+    }
+  }
+  const centerShift = BOARD_WIDTH / 2 - (rawMinX + rawMaxX) / 2;
 
   const positions = [];
   for (let row = 0; row < rows; row++) {
@@ -116,8 +143,8 @@ export function createPegField(scene) {
     const y = topMargin + row * spacingY;
     for (let col = 0; col < template[row].length; col++) {
       if (template[row][col] !== 'X') continue;
-      const x = sideMargin + offset + col * spacingX;
-      if (x > BOARD_WIDTH - sideMargin) continue;
+      const x = centerShift + offset + col * spacingX;
+      if (x < sideMargin || x > BOARD_WIDTH - sideMargin) continue;
       positions.push({ x: jitter(x), y: jitter(y) });
     }
   }
@@ -143,6 +170,10 @@ export function createPegField(scene) {
     });
     peg.setData('points', pointsFor(type));
     peg.setData('carryBoost', carryBoostFor(type));
+    // Per-board re-hit counter — pegs are never destroyed, so without this an
+    // unbounded re-hit on one peg could grind the carry multiplier straight to its
+    // cap; applyBoost() uses it to taper repeat hits on the same peg this board.
+    peg.setData('hits', 0);
     peg.setData('isSpecial', type !== BASE_TYPE);
     if (type.hazard) addHazardTells(scene, peg, x, y);
     pegs.push(peg);

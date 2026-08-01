@@ -3,28 +3,35 @@ import BonusBallManager from './BonusBallManager.js';
 
 describe('BonusBallManager', () => {
   it('awards one ball per zone landing until the session cap', () => {
-    const mgr = new BonusBallManager();
+    const mgr = new BonusBallManager(20000);
     for (let i = 0; i < 5; i++) expect(mgr.evaluateZone(true)).toBe(1);
     expect(mgr.capReached).toBe(true);
     expect(mgr.evaluateZone(true)).toBe(0);
   });
 
   it('ignores non-qualifying zone landings', () => {
-    const mgr = new BonusBallManager();
+    const mgr = new BonusBallManager(20000);
     expect(mgr.evaluateZone(false)).toBe(0);
   });
 
-  it('awards one ball per newly-crossed score threshold, respecting remaining cap', () => {
-    const mgr = new BonusBallManager();
-    expect(mgr.evaluateScoreThreshold(500)).toBe(1);
-    expect(mgr.evaluateScoreThreshold(500)).toBe(0);
-    expect(mgr.evaluateScoreThreshold(2500)).toBe(4);
-    expect(mgr.evaluateScoreThreshold(3000)).toBe(0);
+  it('awards one ball per newly-crossed fraction of the board target, respecting remaining cap', () => {
+    // boardTarget 20000 * targetFraction 0.25 => interval 5000.
+    const mgr = new BonusBallManager(20000);
+    expect(mgr.evaluateScoreThreshold(5000)).toBe(1);
+    expect(mgr.evaluateScoreThreshold(5000)).toBe(0);
+    expect(mgr.evaluateScoreThreshold(25000)).toBe(4);
+    expect(mgr.evaluateScoreThreshold(30000)).toBe(0);
   });
 
-  it('does not re-award thresholds already crossed on carried-over score', () => {
-    const mgr = new BonusBallManager(500);
-    expect(mgr.evaluateScoreThreshold(500)).toBe(0);
-    expect(mgr.evaluateScoreThreshold(1000)).toBe(1);
+  it('does not award past the session cap once thresholds outrun it', () => {
+    const mgr = new BonusBallManager(20000);
+    expect(mgr.evaluateScoreThreshold(25000)).toBe(5);
+    expect(mgr.capReached).toBe(true);
+    expect(mgr.evaluateScoreThreshold(50000)).toBe(0);
+  });
+
+  it('awards nothing from thresholds when boardTarget is zero or negative', () => {
+    expect(new BonusBallManager(0).evaluateScoreThreshold(5000)).toBe(0);
+    expect(new BonusBallManager(-1000).evaluateScoreThreshold(5000)).toBe(0);
   });
 });

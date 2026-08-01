@@ -37,10 +37,9 @@ export const TIMED_DROP = {
 // 'X' = peg present, '.' = empty. Avoid 2+ consecutive fully-solid rows (the zigzag
 // stagger can close the gaps enough to wall off the ball's path), and aim for at least
 // ~20 open cells so all special peg tiers have room to spread out.
-// Every row here is extended one peg past its own previous right edge (widening the row
-// itself if it was already fully solid) versus the original 10-wide symmetric shapes —
-// the un-widened field sat visibly left of board-center, since the staggered offset
-// shifts odd rows right of even rows but both were bounded by the same 10-column cap.
+// createPegField now centers each template's own bounding box on BOARD_WIDTH before
+// placing pegs, so uneven row lengths/stagger no longer bias the field toward one side
+// — templates don't need to be hand-balanced left-to-right to render centered.
 export const PEG_TEMPLATES = [
   {
     id: 'full',
@@ -55,8 +54,8 @@ export const PEG_TEMPLATES = [
     rows: ['XXXXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', '...XXXXX..', '...XXXXX..', '..XXXXXXX.', '.XXXXXXXXX', 'XXXXXXXXXXX'],
   },
   {
-    id: 'funnel',
-    rows: ['XXXXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', '..XXXXXXX.', '...XXXXX..', '...XXXXX..', '....XXX...', '...XXXXX..'],
+    id: 'pyramid',
+    rows: ['...XXXXX..', '....XXXX..', '...XXXXX..', '...XXXXXX..', '..XXXXXXX.', '..XXXXXXX.', '.XXXXXXXXX', 'XXXXXXXXXXX'],
   },
   {
     id: 'zigzag',
@@ -76,6 +75,12 @@ export const PEG_TEMPLATES = [
     ],
   },
 ];
+
+// Dev override: set to a PEG_TEMPLATES id (e.g. 'diamond') to always load that exact
+// board — unmirrored — instead of a random one, so you can iterate on one layout at a
+// time without rerolling. Leave null for normal random selection + mirroring. Never
+// commit this set to a non-null value.
+export const DEV_FORCE_TEMPLATE_ID = null;
 
 // Peg variants. Every peg not claimed by a count > 0 entry falls back to 'base'.
 // score is flat points. scoreMultiplier no longer inflates a peg's points — it now
@@ -115,7 +120,7 @@ export const SLOTS = {
     { value: 0, label: 'FREE\nBALL', grantsBonusBall: true },
     { value: 500, grantsBonusBall: false },
     { value: 1000, grantsBonusBall: false },
-    { value: 5000, grantsBonusBall: false },
+    { value: 2000, grantsBonusBall: false },
     { value: 1000, grantsBonusBall: false },
     { value: 500, grantsBonusBall: false },
     { value: 0, label: 'FREE\nBALL', grantsBonusBall: true },
@@ -134,6 +139,7 @@ export const PROGRESSION = {
 // How long the "BOARD CLEARED" interstitial holds before loading the next board.
 export const BOARD_CLEARED = {
   delayMs: 3000,
+  popInMs: 700, // sign scale-up bounce duration on entry
 };
 
 // How long the game pauses after the last ball before showing the round results.
@@ -141,13 +147,26 @@ export const RESULTS = {
   delayMs: 3000,
 };
 
-// Carry multiplier: a durable, stacking multiplier collected from mult pegs. Persists
-// across boards and only ever climbs (capped), rewarding players who deliberately
-// collect mult pegs. The sole multiplier applied to slot scoring.
+// Carry multiplier: a durable, stacking multiplier collected from mult pegs. It is the
+// sole multiplier applied to slot scoring, and it is deliberately weak in three ways so
+// that maxing it early can't outrun PROGRESSION.thresholdGrowth:
+//   1. repeatHitFactor — a peg's full boost is paid once per board; re-hits pay a quarter,
+//      so the cap is collected, not ground out on one diamond peg.
+//   2. payoutFraction — the multiplier applies sublinearly to a slot's value, so it never
+//      multiplies the jackpot zone outright.
+//   3. carryOverFraction — half the accumulated boost survives a board clear, so stacking
+//      is still rewarded but a board-1 max isn't permanent.
 export const CARRY = {
   start: 1, // multiplier at game start
-  stepPerTier: 0.1, // added per (scoreMultiplier - 1) when a mult peg is hit: mult2 +0.1 ... mult5 +0.4
-  max: 5, // cap
+  // Added per (scoreMultiplier - 1) on a peg's first hit: mult2 +0.06 ... mult5 +0.24.
+  // Deliberately sized so one hit on each of the 10 mult pegs sums to +1.32 — short of
+  // the +1.5 headroom to `max`. Without that gap the cap is reached on a single clean
+  // pass and repeatHitFactor never binds.
+  stepPerTier: 0.06,
+  repeatHitFactor: 0.25, // fraction of the full boost paid on 2nd+ hit of the same peg this board
+  payoutFraction: 0.5, // slot payout = points * (1 + (carry - 1) * payoutFraction)
+  carryOverFraction: 0.5, // next board starts at 1 + (carry - 1) * carryOverFraction
+  max: 2.5, // cap
 };
 
 // Carnival/midway UI palette + chrome tuning. Applies to UI chrome ONLY — the ball and
@@ -241,8 +260,11 @@ export const JUICE = {
   bonusParticleCount: 14,
 };
 
+// Bonus balls are gated on a fraction of the CURRENT BOARD'S target rather than an
+// absolute score, so an inflated economy (high carry, big slots, late boards) can't
+// auto-max the cap on the first few drops the way a flat interval did.
 export const BONUS_BALLS = {
-  scoreInterval: 500,
+  targetFraction: 0.25, // one ball per 25% of the board target earned on that board
   maxPerSession: 5,
 };
 

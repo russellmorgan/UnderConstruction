@@ -7,12 +7,14 @@ import { BONUS_BALLS } from '../config/gameConfig.js';
 // calls them, so a single landing that qualifies for more than one source still can't
 // award past the cap.
 export default class BonusBallManager {
-  // initialScore lets a new board's manager start from the carried-over total's
-  // already-crossed thresholds, so resuming a run doesn't re-award every threshold
-  // the player already passed on prior boards in one burst.
-  constructor(initialScore = 0) {
+  // The score-threshold source is gated on a fraction of THIS BOARD's target, not an
+  // absolute score, so an inflated economy (high carry, big slots, late boards) can't
+  // auto-max the cap in the first few drops the way a flat interval did. Per-board
+  // earnings always start at 0, so there's no carried-over count to seed here.
+  constructor(boardTarget) {
     this.awardedCount = 0;
-    this.scoreThresholdsCrossed = Math.floor(initialScore / BONUS_BALLS.scoreInterval);
+    this.interval = boardTarget * BONUS_BALLS.targetFraction;
+    this.scoreThresholdsCrossed = 0;
   }
 
   // True when the session cap on bonus balls has been hit.
@@ -32,13 +34,16 @@ export default class BonusBallManager {
     return 1;
   }
 
-  // Awards one ball per newly-crossed multiple of scoreInterval, capped by remaining
-  // capacity. Thresholds crossed while capped are still marked as seen so they can't
-  // be re-awarded once the cap frees up (it never does within a session, but this keeps
-  // the bookkeeping correct regardless).
-  // Award one bonus ball per newly-crossed score interval, capped by remaining capacity.
-  evaluateScoreThreshold(currentScore) {
-    const totalCrossed = Math.floor(currentScore / BONUS_BALLS.scoreInterval);
+  // Awards one ball per newly-crossed multiple of this.interval (a fraction of the
+  // board's target), capped by remaining capacity. Thresholds crossed while capped are
+  // still marked as seen so they can't be re-awarded once the cap frees up (it never
+  // does within a session, but this keeps the bookkeeping correct regardless). A
+  // non-positive/non-finite interval (e.g. a board with no target) means the threshold
+  // can never be reached, so bail out before dividing by it.
+  evaluateScoreThreshold(earnedThisBoard) {
+    if (!(this.interval > 0) || !Number.isFinite(this.interval)) return 0;
+
+    const totalCrossed = Math.floor(earnedThisBoard / this.interval);
     const newlyCrossed = totalCrossed - this.scoreThresholdsCrossed;
     this.scoreThresholdsCrossed = totalCrossed;
     if (newlyCrossed <= 0) return 0;
