@@ -4,6 +4,7 @@
 import Phaser from 'phaser';
 import { BOARD_WIDTH, BOARD_HEIGHT, BOARD_CLEARED, CARNIVAL } from '../config/gameConfig.js';
 import { bulbString, marqueeFrame, signPanel, signText, sway, tentBackdrop, valance } from '../ui/carnival.js';
+import { BOARD_CLEARED_LINES } from '../data/narratorLines.js';
 
 // Brief interstitial shown between boards: confirms the clear, then hands off to the
 // next board (already-selected data — level/totalScore/carryMultiplier — just passes
@@ -29,9 +30,17 @@ export default class BoardClearedScene extends Phaser.Scene {
     const sign = this.add.container(BOARD_WIDTH / 2, 300);
     sign.add(signPanel(this, 0, 0, 340, 150, { top: CARNIVAL.gold, bottom: 0xc8891f }));
     marqueeFrame(this, 0, 0, 314, 124, 26).forEach((b) => sign.add(b));
-    sign.add(signText(this, 0, -34, 'BOARD CLEARED', 26, CARNIVAL.inkText));
+    sign.add(signText(this, 0, -34, 'BOARD CLEARED', 26, CARNIVAL.cream));
     sign.add(signText(this, 0, 6, String(this.totalScore), 30, CARNIVAL.cream));
-    sign.add(signText(this, 0, 44, `${this.level} down — the next one's meaner`, 13, CARNIVAL.inkText));
+    const line = Phaser.Utils.Array.GetRandom(BOARD_CLEARED_LINES).replace('{level}', this.level);
+    sign.add(signText(this, 0, 44, line, 13, CARNIVAL.cream));
+    sign.setScale(0);
+    this.tweens.add({
+      targets: sign,
+      scale: 1,
+      duration: BOARD_CLEARED.popInMs,
+      ease: 'Bounce.easeOut',
+    });
     sway(this, sign, 1.8);
 
     this.time.delayedCall(BOARD_CLEARED.delayMs, () => {

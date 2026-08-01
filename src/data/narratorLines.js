@@ -38,11 +38,26 @@ export const ABOVE_THRESHOLD_LINES = [
 export const FAIL_LINES = [
   'Oh, that one is GONE. Gone forever.',
   "That ball won't be needing a return ticket.",
-  'The mine takes its cut. It always does.',
+  'The midway takes its cut. It always does.',
   'Rule one of the midway: mind the spikes.',
   'The spiky one. The red one. With the exclamation point on it.',
   'We put a warning label on it. We really did all we could.',
   "That ball has been deleted. Not destroyed — deleted. There's a difference.",
   'And the midway claims another. I keep a tally. It is long.',
   'To be fair, it was clearly labelled. To be fairer, you hit it anyway.',
+];
+
+// Board-cleared interstitial subtitle. `{level}` is replaced with the board number just
+// cleared — keep phrasing that reads naturally regardless of the number's value.
+export const BOARD_CLEARED_LINES = [
+  "{level} down — the next one's meaner.",
+  'Board {level}, cleared. The midway is taking notes.',
+  "That's {level} in the books. Don't get comfortable.",
+  'Board {level} survived you. Barely.',
+  "{level} down. I've seen the next board. Good luck.",
+  'The prize shelf shifts uneasily after board {level}.',
+  "Board {level}, gone. So is your excuse for the next one.",
+  'Somewhere, the next board is sharpening its pegs.',
+  "{level} conquered. The house is 'recalibrating.'",
+  'Board {level} closes. The next one opens meaner.',
 ];

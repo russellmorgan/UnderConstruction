@@ -57,15 +57,20 @@ export default class DropController {
     const container = scene.add.container(this.x, 0).setDepth(DEPTH.label);
     const g = scene.add.graphics();
 
+    // Shifted down from the header's own top edge (y=0) so the chute marker clears the
+    // board/balls plaques in GameHud's header chrome (signPanel spans roughly y=3–57) —
+    // undropped, this used to visually overlap those plaques.
+    const topOffset = 48;
+
     g.fillStyle(CARNIVAL.gold, 1);
-    g.fillTriangle(-9, 26, 9, 26, 0, 42);
+    g.fillTriangle(-9, 26 + topOffset, 9, 26 + topOffset, 0, 42 + topOffset);
     g.fillStyle(CARNIVAL.goldLight, 1);
-    g.fillTriangle(-5, 27, 5, 27, 0, 36);
+    g.fillTriangle(-5, 27 + topOffset, 5, 27 + topOffset, 0, 36 + topOffset);
     g.fillStyle(CARNIVAL.wire, 1);
-    g.fillRect(-1, 14, 2, 12);
+    g.fillRect(-1, 14 + topOffset, 2, 12);
 
     g.lineStyle(1, CARNIVAL.gold, 0.4);
-    for (let y = 48; y < PEG_FIELD.topMargin - 12; y += 10) {
+    for (let y = 48 + topOffset; y < PEG_FIELD.topMargin - 12; y += 10) {
       g.beginPath();
       g.moveTo(0, y);
       g.lineTo(0, y + 5);

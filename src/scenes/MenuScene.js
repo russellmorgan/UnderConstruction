@@ -69,16 +69,6 @@ export default class MenuScene extends Phaser.Scene {
       .on('pointerup', () => this.clearPlayerData());
 
     this.loadHighScore();
-
-    this.add
-      .text(BOARD_WIDTH / 2, BOARD_HEIGHT - 40, 'clear high score', {
-        fontFamily: 'monospace',
-        fontSize: '14px',
-        color: '#555577',
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerup', () => this.clearHighScore());
   }
 
   // Build SOUND and MUSIC toggle buttons and sync their initial states.
@@ -188,12 +178,5 @@ export default class MenuScene extends Phaser.Scene {
     await adapter.init();
     const highScore = await adapter.getHighScore();
     this.highScoreText.setText(String(highScore));
-  }
-
-  // Reset the high score to zero and update the display.
-  async clearHighScore() {
-    const adapter = getActiveAdapter();
-    await adapter.clearHighScore();
-    this.highScoreText.setText('High score: —');
   }
 }
