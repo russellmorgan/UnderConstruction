@@ -10,16 +10,17 @@ export default class BootScene extends Phaser.Scene {
   // Load all audio assets using BASE_URL for the correct asset path.
   preload() {
     this.load.setBaseURL(import.meta.env.BASE_URL);
-    this.load.audio('hit_hurt', 'audio/hit_hurt.wav');
-    this.load.audio('laser_shoot', 'audio/laser_shoot.wav');
-    this.load.audio('pickup_coin', 'audio/pickup_coin.wav');
-    this.load.audio('powerup_5', 'audio/pickup_coin.wav');
+    this.load.audio('hit_hurt', 'audio/hit_hurt.ogg');
+    this.load.audio('laser_shoot', 'audio/woosh-ball-drop.ogg');
+    this.load.audio('pickup_coin', 'audio/pickup_coin.ogg');
     this.load.audio('intro_music', 'audio/intro.mp3');
+    this.load.audio('ball_drop', 'audio/ball-drop.ogg');
     for (let i = 0; i < 5; i++) {
       this.load.audio(`impact_plank_${i}`, `audio/impactPlank_medium_00${i}.ogg`);
     }
     this.load.audio('impact_glass_heavy', 'audio/impactGlass_heavy_002.ogg');
-    this.load.audio('menu_btn', 'audio/menu_btn.wav');
+    this.load.audio('menu_btn', 'audio/glass-clink.ogg');
+    this.load.audio('board_complete', 'audio/board-complete.mp3');
     this.load.audio('game_music', 'audio/game_music.mp3');
   }
 

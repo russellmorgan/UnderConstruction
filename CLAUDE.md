@@ -8,7 +8,7 @@ A Pachinko/Galton-board browser game ("drop your balls") built with Phaser 4 + M
 
 ## Testing
 
-`npm test` runs the vitest suite (`src/systems/*.test.js`). No linter or type checker is configured. Systems that depend on Matter physics are hard to observe programmatically — defer those to the user to playtest.
+`npm test` runs the vitest suite (`src/**/*.test.js`). No linter or type checker is configured. Systems that depend on Matter physics are hard to observe programmatically — defer those to the user to playtest.
 
 ## Commands
 

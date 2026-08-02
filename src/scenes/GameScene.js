@@ -26,7 +26,7 @@ import {
   RESULTS,
 } from '../config/gameConfig.js';
 import GameHud, { DEPTH } from '../ui/GameHud.js';
-import { FONT_HUD, FONT_SIGN, lerpColor } from '../ui/carnival.js';
+import { FONT_HUD, FONT_SIGN, lerpColor, tentBackdrop } from '../ui/carnival.js';
 import { createPegField } from '../systems/PegField.js';
 import { thresholdForLevel } from '../systems/Progression.js';
 import CarryMultiplier from '../systems/CarryMultiplier.js';
@@ -61,6 +61,7 @@ export default class GameScene extends Phaser.Scene {
     this.boardStartScore = this.totalScore;
     this.boardTarget = thresholdForLevel(this.level);
 
+    tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT).setDepth(-1);
     createPegField(this);
     this.hud = new GameHud(this);
     this.createSlots();
@@ -178,7 +179,7 @@ export default class GameScene extends Phaser.Scene {
     const topValue = Math.max(...zones.map((z) => z.value));
     this.hud.decorateSlots(y);
 
-    zones.forEach(({ value, label, grantsBonusBall }, i) => {
+    zones.forEach(({ value, label }, i) => {
       const x = slotWidth * i + slotWidth / 2;
       // Booth fill warms toward gold with the tier so the prize slots read at a glance.
       const fill = lerpColor(CARNIVAL.nightDeep, CARNIVAL.panelRed, (value / topValue) * 0.85);
@@ -190,7 +191,6 @@ export default class GameScene extends Phaser.Scene {
         isSensor: true,
         label: `slot-${value}`,
       });
-      zone.setData('grantsBonusBall', grantsBonusBall);
 
       const left = slotWidth * i;
       this.slotBounds.push({ left, right: left + slotWidth });
@@ -311,13 +311,20 @@ export default class GameScene extends Phaser.Scene {
         if (isSpecial) this.audioFeedback.specialPegHit();
         else this.audioFeedback.pegHit();
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
+        this.flashPeg(otherBody.gameObject);
       } else if (otherBody.label?.startsWith('slot-')) {
         this.checkNearMiss(ballBody.gameObject.x);
-        this.resolveDrop(Number(otherBody.label.split('-')[1]), otherBody.gameObject.getData('grantsBonusBall'));
+        this.resolveDrop(Number(otherBody.label.split('-')[1]));
       } else if (otherBody.label === 'floor') {
-        this.resolveDrop(0, false);
+        this.resolveDrop(0);
       }
     }
+  }
+
+  // Quick brightness pop on the peg itself so a hit reads as impact, not just camera shake.
+  flashPeg(peg) {
+    peg.setTint(JUICE.pegFlash.tint).setTintMode(Phaser.TintModes.FILL);
+    this.time.delayedCall(JUICE.pegFlash.duration, () => peg.clearTint());
   }
 
   // Flags a "so close" moment when the ball lands one zone away from the top-value
@@ -429,19 +436,20 @@ export default class GameScene extends Phaser.Scene {
   // Score a slot landing: payout runs through the carry multiplier sublinearly
   // (only payoutFraction of the boost applies), trigger juice feedback, evaluate
   // bonus balls against this board's earnings, finish the drop.
-  resolveDrop(points, grantsBonusBall) {
+  resolveDrop(points) {
     const awarded = this.carry.payout(points);
     this.scoreManager.add(awarded);
+
+    this.audioFeedback.ballDrop();
 
     if (points > 0) {
       this.spawnScoreBurst(this.currentBall.x, this.currentBall.y, this.carry.value);
       this.cameras.main.shake(JUICE.shake.score.duration, JUICE.shake.score.intensity * this.carry.value);
-      this.audioFeedback.scoreHit(this.carry.value - 1);
     }
 
-    const bonusCount =
-      this.bonusBalls.evaluateZone(grantsBonusBall) +
-      this.bonusBalls.evaluateScoreThreshold(this.scoreManager.score - this.boardStartScore);
+    const bonusCount = this.bonusBalls.evaluateScoreThreshold(
+      this.scoreManager.score - this.boardStartScore
+    );
     if (bonusCount > 0) {
       this.awardBonusBalls(bonusCount, this.currentBall.x, this.currentBall.y);
     }
@@ -550,9 +558,11 @@ export default class GameScene extends Phaser.Scene {
 
     this.ballsRemaining--;
     this.updateBallsText();
+    this.updateBoardText();
     this.narrator.onDrop(this.scoreManager.score);
 
-    if (this.ballsRemaining <= 0) {
+    // Target met ends the board immediately — leftover balls can't pad the total.
+    if (this.ballsRemaining <= 0 || this.scoreManager.score - this.boardStartScore >= this.boardTarget) {
       this.endBoard();
     } else {
       this.dropController.setEnabled(true);
@@ -560,14 +570,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // Reuses the existing juice-pass hooks (flash, particle burst) tinted green, plus a
-  // narrator callout and the real "Powerup 5" cue, rather than a separate feedback system.
-  // Add extra balls to the session with green flash, particle burst, narrator callout, and powerup sound.
+  // narrator callout, rather than a separate feedback system.
+  // Add extra balls to the session with green flash, particle burst, and narrator callout.
   awardBonusBalls(count, x, y) {
     this.ballsRemaining += count;
     this.cameras.main.flash(JUICE.bonusFlash.duration, ...JUICE.bonusFlash.color);
     this.scoreParticles.setParticleTint(Phaser.Display.Color.GetColor(...JUICE.bonusFlash.color));
     this.scoreParticles.explode(JUICE.bonusParticleCount * count, x, y);
-    this.sound.play('powerup_5');
   }
 
   // Sync the HUD ball count.
@@ -575,9 +584,9 @@ export default class GameScene extends Phaser.Scene {
     this.hud.updateBalls(this.ballsRemaining);
   }
 
-  // Sync the HUD board number and earn target.
+  // Sync the HUD board number and the points still needed to clear this board.
   updateBoardText() {
-    this.hud.updateBoard(this.level, this.boardTarget);
+    this.hud.updateBoard(this.level, this.boardTarget - (this.scoreManager.score - this.boardStartScore));
   }
 
   // Sync the carry-multiplier display.

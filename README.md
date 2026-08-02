@@ -10,13 +10,13 @@ or press **Space** to release a ball at the chute's current position — it's a 
 game, not an aiming game. The ball bounces down through the peg field and lands in one
 of the seven scoring zones at the bottom. Press **Esc** to pause.
 
-You get 10 balls per board. The run ends when you're out of balls and haven't hit the
-board's target.
+You get 10 balls per board. The board ends the moment you hit its target; the run ends
+when you're out of balls and haven't.
 
 ## Rules
 
-- **Scoring zones**: seven zones across the bottom, worth 0 / 500 / 1000 / **2000** /
-  1000 / 500 / 0. The two zero-value outer zones are FREE BALL zones (see below).
+- **Scoring zones**: seven zones across the bottom, worth 100 / 500 / 1000 / **2000** /
+  1000 / 500 / 100.
 - **Pegs**: plain brass pegs are worth 5 points. Four reward tiers — bronze, silver,
   gold, diamond — are worth the same 5 points but add to your carry boost. The single
   spiked black-and-yellow hazard peg costs 20 points **and ends the drop instantly**,
@@ -30,13 +30,12 @@ board's target.
   - Half the accumulated boost survives into the next board — stacking is rewarded, but
     one hot board doesn't carry the whole run.
 - **Boards**: each board is a randomly-shaped peg field with an earn target. Board 1's
-  target is 20,000 points earned **on that board**; every board after multiplies the
-  target by 1.6. Hit the target before you run out of balls and you advance with your
-  running total and half your boost. Miss it and the run ends.
-- **Bonus balls**: up to 5 extra balls per session, from two sources:
-  - Landing in either FREE BALL zone (the outer zones, the hardest to hit) grants +1.
-  - Every 25% of the current board's target that you earn grants +1 — a single big
-    landing can cross several thresholds at once and earns a ball for each.
+  target is 2,500 points earned **on that board**; every board after multiplies the
+  target by 1.6. The HUD counts down the points you still need. Hit the target and the
+  board ends right there — unused balls don't carry — and you advance with your running
+  total and half your boost. Run out of balls first and the run ends.
+- **Bonus balls**: every 25% of the current board's target that you earn grants +1, up to 3 per board —
+  a single big landing can cross several thresholds at once and earns a ball for each.
 - **Near misses**: land just outside the top-value zone and the barker will let you know
   how close you were.
 - When the run ends, your final score is compared against your saved high score.

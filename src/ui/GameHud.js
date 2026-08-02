@@ -191,13 +191,13 @@ export default class GameHud {
     g.fillRect(0, railTop, BOARD_WIDTH, 2);
 
     signPanel(scene, 124, BOARD_HEIGHT - 26, 208, 40, { radius: 5 }).setDepth(DEPTH.chrome);
-    signText(scene, 48, BOARD_HEIGHT - 26, 'TAKE', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
+    signText(scene, 48, BOARD_HEIGHT - 26, 'SCORE', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
   }
 
-  // Update board number and earn-target display.
-  updateBoard(level, target) {
+  // Update board number and the points still needed to clear this board.
+  updateBoard(level, remaining) {
     this.boardText.setText(`BOARD ${level}`);
-    this.targetText.setText(`EARN ${target}`);
+    this.targetText.setText(`EARN ${Math.max(0, Math.ceil(remaining))}`);
   }
 
   // Update the remaining ball count display.

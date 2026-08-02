@@ -111,6 +111,22 @@ function addHazardTells(scene, peg, x, y) {
   });
 }
 
+// Ambient breathing glow behind reward-tier (mult) pegs — a soft halo in the peg's own
+// ring color that pulses in and out, scaled by the peg's `glow` intensity so higher
+// tiers breathe more noticeably. Purely cosmetic, same lifecycle as addHazardTells.
+function addRewardGlow(scene, peg, x, y, type) {
+  const glow = scene.add.circle(x, y, PHYSICS.peg.radius * 2.2, type.ring, 0.18 * type.glow).setDepth(-0.5);
+  scene.tweens.add({
+    targets: glow,
+    alpha: { from: 0.1 * type.glow, to: 0.4 * type.glow },
+    scale: { from: 0.85, to: 1.2 },
+    duration: 900,
+    yoyo: true,
+    repeat: -1,
+    ease: 'Sine.easeInOut',
+  });
+}
+
 // Staggered grid: alternating rows offset by half spacing. Only cells marked 'X' in
 // the chosen template get a peg, so the board's silhouette varies game to game.
 // Templates aren't guaranteed left/right-symmetric (row lengths vary per template, and
@@ -176,6 +192,7 @@ export function createPegField(scene) {
     peg.setData('hits', 0);
     peg.setData('isSpecial', type !== BASE_TYPE);
     if (type.hazard) addHazardTells(scene, peg, x, y);
+    else if (type.ring) addRewardGlow(scene, peg, x, y, type);
     pegs.push(peg);
   });
 

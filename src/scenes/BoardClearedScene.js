@@ -23,6 +23,8 @@ export default class BoardClearedScene extends Phaser.Scene {
 
   // Build the "BOARD CLEARED" splash and schedule the auto-transition to the next GameScene.
   create() {
+    this.sound.play('board_complete', { volume: 0.6 });
+
     tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT);
     valance(this, 0, BOARD_WIDTH, 26, 30);
     bulbString(this, 0, 52, BOARD_WIDTH, 52, 14, 16);

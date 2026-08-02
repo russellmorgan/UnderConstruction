@@ -7,7 +7,8 @@ responsibilities — see "Docs are part of the change" at the end.
 
 Stack: Phaser 4 (Matter physics) + Vite, plain JS ESM, no TypeScript, no linter.
 Vitest covers the Phaser-free systems (`src/systems/*.test.js`): `CarryMultiplier`,
-`BonusBallManager`, `Progression`, `ScoreManager`. Anything touching Matter or Phaser
+`BonusBallManager`, `Progression`, `ScoreManager`, plus `src/config/gameConfig.test.js`
+which guards the peg-template invariants. Anything touching Matter or Phaser
 rendering is playtested, not unit tested — keep new pure logic in `systems/` so it
 stays testable.
 
@@ -60,7 +61,7 @@ start silently resumes the previous run's progression.
 | File | Owns |
 | --- | --- |
 | `BootScene.js` | Preloads every audio key (uses `import.meta.env.BASE_URL`), awaits both webfonts, starts `MenuScene`. Add new SFX keys here. |
-| `MenuScene.js` | Title sign, house-record stub (read via platform adapter), rules blurb, START GAME, sound/music toggles, intro music with fade in/out, "reset player data" link. |
+| `MenuScene.js` | Title sign, house-record stub (read via platform adapter), rules blurb, START GAME, sound/music toggles, INSTRUCTIONS button (how-to-play modal with a peg legend generated from `PEG_TYPES`/`CARRY`), intro music with fade in/out, "reset player data" link. |
 | `GameScene.js` | **The orchestrator** (largest file). Builds peg field + slot sensors + floor + walls, instantiates every system, dispatches collisions, owns ball lifecycle, the stall watchdog `update()`, all juice (particles/shake/flash/popups/shockwave), and board advancement. |
 | `BoardClearedScene.js` | 3s interstitial; passes `level+1`, total score and carried multiplier straight through to a fresh `GameScene`. |
 | `ResultsScene.js` | Final take, boards cleared, high-score compare/save, NEW HOUSE RECORD reveal, ONE MORE / MIDWAY. |
@@ -71,7 +72,7 @@ start silently resumes the previous run's progression.
 | --- | --- | --- | --- |
 | `PegField.js` | `createPegField(scene)`: pick/mirror a template, center its bounding box, jitter positions, shuffle-assign peg types by `count`, stamp textures, create static Matter bodies, attach per-peg data (`points`, `carryBoost`, `hits`, `isSpecial`), add hazard glow/shiver tweens. Throws if a template has fewer open cells than the special pegs need. | yes | no |
 | `CarryMultiplier.js` | The durable boost: `applyBoost(base, priorHits)`, `payout(points)`, `carryOver()`. All three damping rules live here (`repeatHitFactor`, `payoutFraction`, `carryOverFraction`, `max`). | no | yes |
-| `BonusBallManager.js` | Two bonus-ball sources against one session cap: `evaluateZone(grants)` and `evaluateScoreThreshold(earnedThisBoard)`, the latter gated on a fraction of the *current board's* target. | no | yes |
+| `BonusBallManager.js` | Two bonus-ball sources: `evaluateZone(grants)` (uncapped) and `evaluateScoreThreshold(earnedThisBoard)` (capped at `BONUS_BALLS.maxFromThreshold`), the latter gated on a fraction of the *current board's* target. | no | yes |
 | `Progression.js` | `thresholdForLevel(level)` — the geometric per-board earn target from `PROGRESSION`. | no | yes |
 | `ScoreManager.js` | Running total + its text object. `add`, `reset`, `format`. | text only | yes |
 | `DropController.js` | Horizontal aim + release. Two modes via `TIMED_DROP.enabled`: auto-sweep-and-tap (current) or drag-to-aim. Renders the brass chute indicator and dashed drop line; fires `onDrop(x)`. `setEnabled` gates input while a ball falls. |  yes | no |
@@ -82,7 +83,7 @@ start silently resumes the previous run's progression.
 ### UI (`src/ui/`)
 | File | Owns |
 | --- | --- |
-| `carnival.js` | The shared procedural kit: `signText`/`hudText`, `tentBackdrop`, `valance`, `bulbString`, `marqueeFrame`, `signPanel`, `ticketButton`, `toggleButton`, `sway`, `chains`, `woodPost`, `vignette`, `gradientRect`, `lerpColor`/`shade`, and the two peg texture generators (`makePegTexture`, `makeHazardPegTexture`, supersampled — stamp with `PEG_TEXTURE_SCALE`). Also the font constants. |
+| `carnival.js` | The shared procedural kit: `signText`/`hudText`, `tentBackdrop`, `valance`, `bulbString`, `marqueeFrame`, `signPanel`, `ticketButton`, `checkbox` (plain box+tick — the audio settings in `MenuScene`/`PauseScene`), `sway`, `chains`, `woodPost`, `vignette`, `gradientRect`, `lerpColor`/`shade`, and the two peg texture generators (`makePegTexture`, `makeHazardPegTexture`, supersampled — stamp with `PEG_TEXTURE_SCALE`). Also the font constants. |
 | `GameHud.js` | GameScene chrome only, no gameplay state: backdrop/vignette/posts, header plaques (`updateBoard`, `updateBalls`), hanging barker sign (`setBarkerVisible`, `setBarkerBelowThreshold`, `attachBarkerText`), slot booth framing (`decorateSlots`, `slotLabel`), bottom rail. Exports `DEPTH = { chrome 5, label 6, effect 15, ball 20 }`; play field stays at 0, backdrop negative. |
 
 ### Platform (`src/platform/`)
@@ -116,7 +117,7 @@ rather than branching at call sites.
 | Any balance number (scores, thresholds, counts, timings, juice, palette) | `config/gameConfig.js` |
 | New board silhouette | `PEG_TEMPLATES`; pin it with `DEV_FORCE_TEMPLATE_ID` while iterating (never commit non-null) |
 | New peg tier / behaviour | `PEG_TYPES` + `PegField.pegTextureFor`, and `carryBoostFor`/`pointsFor` if it scores differently |
-| Slot count/values/free-ball zones | `SLOTS.zones` (GameScene derives slot width and the top-tier zone from it) |
+| Slot count/values | `SLOTS.zones` (GameScene derives slot width and the top-tier zone from it) |
 | Board targets / difficulty curve | `PROGRESSION` + `systems/Progression.js` |
 | Multiplier economy | `CarryMultiplier.js` + `CARRY` |
 | Bonus-ball rules | `BonusBallManager.js` + `BONUS_BALLS` |

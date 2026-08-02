@@ -40,6 +40,10 @@ export const TIMED_DROP = {
 // createPegField now centers each template's own bounding box on BOARD_WIDTH before
 // placing pegs, so uneven row lengths/stagger no longer bias the field toward one side
 // — templates don't need to be hand-balanced left-to-right to render centered.
+// Every template must keep at least two full-width 'XXXXXXXXXXX' rows at different
+// depths (rows 2 and 6 by convention). Without them, funnel/pyramid shapes leave an
+// empty column on each edge and the ball can fall from the drop line straight into a
+// slot without touching a single peg — the one outcome the board must never allow.
 export const PEG_TEMPLATES = [
   {
     id: 'full',
@@ -47,32 +51,48 @@ export const PEG_TEMPLATES = [
   },
   {
     id: 'diamond',
-    rows: ['....XXX...', '...XXXXX..', '..XXXXXXX.', '.XXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', '...XXXXX..', '....XXX...'],
+    rows: ['....XXX...', '...XXXXX..', 'XXXXXXXXXXX', '.XXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', 'XXXXXXXXXXX', '....XXX...'],
   },
   {
     id: 'hourglass',
-    rows: ['XXXXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', '...XXXXX..', '...XXXXX..', '..XXXXXXX.', '.XXXXXXXXX', 'XXXXXXXXXXX'],
+    rows: ['XXXXXXXXXXX', '.XXXXXXXXX', 'XXXXXXXXXXX', '...XXXXX..', '...XXXXX..', '..XXXXXXX.', 'XXXXXXXXXXX', '.XXXXXXXXX'],
   },
   {
     id: 'pyramid',
-    rows: ['...XXXXX..', '....XXXX..', '...XXXXX..', '...XXXXXX..', '..XXXXXXX.', '..XXXXXXX.', '.XXXXXXXXX', 'XXXXXXXXXXX'],
+    rows: ['...XXXXX..', '....XXXX..', 'XXXXXXXXXXX', '...XXXXXX..', '..XXXXXXX.', '..XXXXXXX.', 'XXXXXXXXXXX', '.XXXXXXXXX'],
   },
   {
     id: 'zigzag',
-    rows: ['.XXXXXX.X.', '..XX.XXX.X.', '..XXXXXX..', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', '....XXXXXX', '...XXXXXX.'],
+    rows: ['.XXXXXX.X.', '..XX.XXX.X.', 'XXXXXXXXXXX', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', 'XXXXXXXXXXX', '...XXXXXX.'],
   },
   {
     id: 'checkerboard',
     rows: [
       'X.X.X.X.XX',
       '.X.X.X.X.XX',
-      'X.X.X.X.XX',
+      'XXXXXXXXXXX',
       '.X.X.X.X.XX',
       'X.X.X.X.XX',
       '.X.X.X.X.XX',
-      'X.X.X.X.XX',
+      'XXXXXXXXXXX',
       '.X.X.X.X.XX',
     ],
+  },
+  {
+    id: 'chevron',
+    rows: ['XXXX.X.XXXX', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'XX.XXXXX.XX', 'X.XX.X.XX.X', 'XX.XXXXX.XX', 'XXXXXXXXXXX', 'XXX.XXX.XXX'],
+  },
+  {
+    id: 'lattice',
+    rows: ['XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXXXX.XXXXX', 'X.XXX.XXX.X', 'XXXXXXXXXXX', 'XXX.XXX.XXX', 'XX.XXXXX.XX'],
+  },
+  {
+    id: 'ribs',
+    rows: ['XXXXXXXXXXX', 'X.X.XXX.X.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XX.XXXXX.XX', 'XXXX.X.XXXX', 'XXXXXXXXXXX'],
+  },
+  {
+    id: 'honeycomb',
+    rows: ['XX.XXX.XXXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXX.XXX.XXX', 'XX.XXXXX.XX'],
   },
 ];
 
@@ -89,13 +109,15 @@ export const DEV_FORCE_TEMPLATE_ID = null;
 // flat base score for points; their value is the multiplier they grant.
 // frictionStatic: 0 keeps a slow-moving ball from pinning in the notch between two pegs.
 //
-// Color logic, end to end: base pegs are muted antique brass so the ~60 of them sit
-// back. The four mult tiers read as a prize-shelf ladder — bronze → silver → gold →
-// diamond — a metaphor most players already know, so "which peg is worth more" is
-// legible without reading a number. `ring`/`glow` intensify with tier so the rarer
-// pegs are visibly juicier, not just differently colored. Diamond is the one reward
-// peg that breaks from warm-brass into cool cyan-white — a deliberate palette break so
-// the jackpot tier still pops even after a player's eye has adapted to the ladder.
+// Color logic, end to end: base pegs are muted antique brass so the ~70 of them sit
+// back. The four mult tiers used to be a metal ladder (bronze/silver/gold/diamond), but
+// bronze and gold were close enough to the brass base that players couldn't tell what
+// to aim for — the tiers were only legible side by side, and on the board they never
+// are. So the mult tiers are now saturated neon that shares no hue with brass at all:
+// lime → magenta → amber → diamond-cyan. Rank still climbs by `ring`/`glow` intensity
+// rather than by hue, since the job of the color is "aim here", and only the job of the
+// glow is "this one's worth more". Keep any new reward tier off the brass hue range
+// (roughly 25-45° hue) or it disappears into the field again.
 //
 // The penalty peg is `hazard: true` and drawn by a completely different generator
 // (makeHazardPegTexture, see PegField.pegTextureFor) — spiked mine silhouette, black/
@@ -105,25 +127,25 @@ export const DEV_FORCE_TEMPLATE_ID = null;
 // which is why no reward tier is red or black.
 export const PEG_TYPES = [
   { id: 'base', score: 5, color: 0xb98a4b, restitution: 0.7, friction: 0, frictionStatic: 0, count: 'rest' },
-  { id: 'mult2', scoreMultiplier: 2, color: 0xb5732f, ring: 0x7a4a1e, glow: 0.85, restitution: 0.8, friction: 0, frictionStatic: 0, count: 4 }, // bronze
-  { id: 'mult3', scoreMultiplier: 3, color: 0xcdd7e0, ring: 0x8b97a3, glow: 0.7, restitution: 0.85, friction: 0, frictionStatic: 0, count: 2 }, // silver
-  { id: 'mult4', scoreMultiplier: 4, color: 0xf2b134, ring: 0xad7a10, glow: 0.9, restitution: 0.9, friction: 0, frictionStatic: 0, count: 2 }, // gold
-  { id: 'mult5', scoreMultiplier: 5, color: 0xa8e8ff, ring: 0x5fd0f2, glow: 1.15, restitution: 0.95, friction: 0, frictionStatic: 0, count: 2 }, // diamond
-  { id: 'penalty', score: -20, color: 0x1a1414, hazard: true, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 3 },
+  { id: 'mult2', scoreMultiplier: 2, color: 0x5cf24a, ring: 0xbdffb0, glow: 1.0, restitution: 0.8, friction: 0, frictionStatic: 0, count: 4 }, // lime
+  { id: 'mult3', scoreMultiplier: 3, color: 0xff5fd2, ring: 0xffc2ef, glow: 1.15, restitution: 0.85, friction: 0, frictionStatic: 0, count: 2 }, // magenta
+  { id: 'mult4', scoreMultiplier: 4, color: 0xffd21f, ring: 0xfff3a8, glow: 1.3, restitution: 0.9, friction: 0, frictionStatic: 0, count: 2 }, // amber
+  { id: 'mult5', scoreMultiplier: 5, color: 0x6feaff, ring: 0xffffff, glow: 1.5, restitution: 0.95, friction: 0, frictionStatic: 0, count: 2 }, // diamond-cyan
+  { id: 'penalty', score: -20, color: 0x1a1414, hazard: true, restitution: 0.4, friction: 0.05, frictionStatic: 0.05, count: 2 },
 ];
 
 export const SLOTS = {
   height: 60,
-  // grantsBonusBall: the outer edge zones — lowest-probability landings on a Galton-board-shaped
-  // distribution funneling toward center — so a bonus ball there feels earned, not free.
+  // Outer zones are the lowest-probability landings on a Galton-board-shaped distribution
+  // funneling toward center, so they pay a small consolation rather than nothing.
   zones: [
-    { value: 0, label: 'FREE\nBALL', grantsBonusBall: true },
-    { value: 500, grantsBonusBall: false },
-    { value: 1000, grantsBonusBall: false },
-    { value: 2000, grantsBonusBall: false },
-    { value: 1000, grantsBonusBall: false },
-    { value: 500, grantsBonusBall: false },
-    { value: 0, label: 'FREE\nBALL', grantsBonusBall: true },
+    { value: 100 },
+    { value: 500 },
+    { value: 1000 },
+    { value: 2000 },
+    { value: 1000 },
+    { value: 500 },
+    { value: 100 },
   ],
 };
 
@@ -132,8 +154,8 @@ export const SLOTS = {
 // game total carries across boards, but the gate is per-board earnings.
 // thresholdForLevel(level) = round(baseThreshold * thresholdGrowth^(level-1))
 export const PROGRESSION = {
-  baseThreshold: 20000, // board 1 minimum earned to advance
-  thresholdGrowth: 1.6, // × per board: 20000, 32000, 51200, 81920, ...
+  baseThreshold: 5000, // board 1 minimum earned to advance
+  thresholdGrowth: 1.6, // × per board: 2500, 4000, 6400, 10240, ...
 };
 
 // How long the "BOARD CLEARED" interstitial holds before loading the next board.
@@ -212,6 +234,7 @@ export const JUICE = {
     peg: { duration: 40, intensity: 0.003 },
     score: { duration: 120, intensity: 0.004 }, // multiplied by current multiplier at call time
   },
+  pegFlash: { duration: 90, tint: 0x7ef7ff },
   particle: {
     baseCount: 16,
     countPerMultiplier: 4,
@@ -263,9 +286,12 @@ export const JUICE = {
 // Bonus balls are gated on a fraction of the CURRENT BOARD'S target rather than an
 // absolute score, so an inflated economy (high carry, big slots, late boards) can't
 // auto-max the cap on the first few drops the way a flat interval did.
+// Zone landings (the hardest shot on the board) are never capped — they're rare enough
+// to be self-limiting. Only the score-threshold source, which fires on ordinary play,
+// has a cap, so it can't crowd out the zone bonus before a player ever reaches it.
 export const BONUS_BALLS = {
   targetFraction: 0.25, // one ball per 25% of the board target earned on that board
-  maxPerSession: 5,
+  maxFromThreshold: 3,
 };
 
 export const NARRATOR = {

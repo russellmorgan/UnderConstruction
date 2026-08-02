@@ -25,6 +25,8 @@ export default class ResultsScene extends Phaser.Scene {
   init(data) {
     this.finalScore = data?.score ?? 0;
     this.level = data?.level ?? 1;
+    // Session tally shown on the menu; registry lives as long as the page does.
+    this.registry.set('sessionBoards', (this.registry.get('sessionBoards') ?? 0) + this.level - 1);
   }
 
   // Build the results screen: backdrop, banner, receipt stub, high-score check, and action buttons.
@@ -67,7 +69,7 @@ export default class ResultsScene extends Phaser.Scene {
   createStub() {
     const y = 280;
     signPanel(this, BOARD_WIDTH / 2, y, 320, 150, { top: CARNIVAL.wood, bottom: CARNIVAL.woodDark, radius: 8 });
-    signText(this, BOARD_WIDTH / 2, y - 52, 'YOUR TAKE', 14, CARNIVAL.cream);
+    signText(this, BOARD_WIDTH / 2, y - 52, 'YOUR SCORE', 14, CARNIVAL.cream);
     signText(this, BOARD_WIDTH / 2, y - 12, String(this.finalScore), 42, CARNIVAL.goldText);
 
     const boards = this.level === 1 ? 'no boards cleared' : `${this.level - 1} boards cleared`;

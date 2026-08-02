@@ -276,22 +276,40 @@ export function ticketButton(scene, x, y, w, h, label, onClick, opts = {}) {
   return container;
 }
 
-// A ticketButton that flips between two states on click (e.g. an ON/OFF setting).
-// isOn reads current state, onToggle applies the flip; the button re-renders itself
-// each click rather than mutating ticketButton's internals.
-// Two-state toggle built from ticketButton: re-renders with the current label each time it's toggled.
-export function toggleButton(scene, x, y, w, h, labelFor, isOn, onToggle, opts = {}) {
-  let current;
-  const render = () => {
-    if (current) current.destroy();
-    current = ticketButton(scene, x, y, w, h, labelFor(isOn()), () => {
-      onToggle();
-      render();
-    }, opts);
-    current.setAlpha(isOn() ? 1 : 0.8);
+// Plain checkbox + label for settings that don't deserve a whole ticket stub.
+// No alpha dimming when off — the tick mark alone carries the state.
+export function checkbox(scene, x, y, label, isOn, onToggle) {
+  const size = 16;
+  const box = scene.add.graphics();
+  const text = hudText(scene, x + size + 8, y, label, 13).setOrigin(0, 0.5);
+
+  const draw = () => {
+    box.clear();
+    box.fillStyle(CARNIVAL.nightDeep, 1);
+    box.fillRoundedRect(x, y - size / 2, size, size, 3);
+    box.lineStyle(2, CARNIVAL.gold, 1);
+    box.strokeRoundedRect(x, y - size / 2, size, size, 3);
+    if (isOn()) {
+      box.lineStyle(3, CARNIVAL.goldLight, 1);
+      box.beginPath();
+      box.moveTo(x + 3.5, y);
+      box.lineTo(x + 6.5, y + 4);
+      box.lineTo(x + 12.5, y - 4.5);
+      box.strokePath();
+    }
   };
-  render();
-  return { destroy: () => current.destroy() };
+  draw();
+
+  const hit = scene.add
+    .rectangle(x, y - 12, size + 16 + text.width, 24, 0x000000, 0)
+    .setOrigin(0, 0)
+    .setInteractive({ useHandCursor: true })
+    .on('pointerup', () => {
+      onToggle();
+      draw();
+    });
+
+  return { box, text, hit };
 }
 
 // Gentle hanging-sign sway. Anything on a chain or a hook gets one of these.

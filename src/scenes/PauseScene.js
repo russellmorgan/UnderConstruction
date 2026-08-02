@@ -4,7 +4,7 @@
 import Phaser from 'phaser';
 import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL } from '../config/gameConfig.js';
 import { isSoundOn, isMusicOn, toggleSound, toggleMusic } from '../systems/AudioSettings.js';
-import { signPanel, signText, sway, ticketButton, toggleButton } from '../ui/carnival.js';
+import { checkbox, signPanel, signText, sway, ticketButton } from '../ui/carnival.js';
 
 // Launched on top of a paused GameScene (rather than living inside it) so its
 // buttons keep receiving input while GameScene's own update/physics/input are frozen.
@@ -43,46 +43,21 @@ export default class PauseScene extends Phaser.Scene {
     });
 
     const toggleY = centerY + 150;
-    toggleButton(
-      this,
-      BOARD_WIDTH / 2 - 60,
-      toggleY,
-      100,
-      32,
-      (on) => `SOUND: ${on ? 'ON' : 'OFF'}`,
-      isSoundOn,
-      () => {
-        toggleSound();
-      },
-      { fontSize: 12, notchColor: 0x0b0710, textShadow: false, textColor: CARNIVAL.cream }
-    );
-    toggleButton(
-      this,
-      BOARD_WIDTH / 2 + 60,
-      toggleY,
-      100,
-      32,
-      (on) => `MUSIC: ${on ? 'ON' : 'OFF'}`,
-      isMusicOn,
-      () => {
-        const on = toggleMusic();
-        const gameScene = this.scene.get('GameScene');
-        if (gameScene) {
-          if (on) {
-            if (!gameScene.gameMusic?.isPlaying) {
-              gameScene.gameMusic = gameScene.sound.add('game_music', { loop: true, volume: 0.2 });
-              gameScene.gameMusic.play();
-            }
-          } else {
-            if (gameScene.gameMusic) {
-              gameScene.gameMusic.stop();
-              gameScene.gameMusic = null;
-            }
-          }
+    checkbox(this, BOARD_WIDTH / 2 - 81, toggleY, 'SOUND', isSoundOn, toggleSound);
+    checkbox(this, BOARD_WIDTH / 2 + 12, toggleY, 'MUSIC', isMusicOn, () => {
+      const on = toggleMusic();
+      const gameScene = this.scene.get('GameScene');
+      if (!gameScene) return;
+      if (on) {
+        if (!gameScene.gameMusic?.isPlaying) {
+          gameScene.gameMusic = gameScene.sound.add('game_music', { loop: true, volume: 0.2 });
+          gameScene.gameMusic.play();
         }
-      },
-      { fontSize: 12, notchColor: 0x0b0710, textShadow: false, textColor: CARNIVAL.cream }
-    );
+      } else if (gameScene.gameMusic) {
+        gameScene.gameMusic.stop();
+        gameScene.gameMusic = null;
+      }
+    });
 
     this.input.keyboard.on('keydown-ESC', () => this.resume());
   }
