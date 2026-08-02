@@ -22,6 +22,7 @@ export default class BootScene extends Phaser.Scene {
     this.load.audio('menu_btn', 'audio/glass-clink.ogg');
     this.load.audio('board_complete', 'audio/board-complete.mp3');
     this.load.audio('game_music', 'audio/game_music.mp3');
+    this.load.audio('end_game', 'audio/end-game.ogg');
   }
 
   // Force webfont loading before transitioning to the menu (canvas text fallback is silent).

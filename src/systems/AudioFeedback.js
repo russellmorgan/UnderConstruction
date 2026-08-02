@@ -74,4 +74,10 @@ export default class AudioFeedback {
     if (!isSoundOn()) return;
     this.scene.sound.play('ball_drop', { volume: 0.6 });
   }
+
+  // Play the game-over sting when the run ends (board target missed, out of balls).
+  gameOver() {
+    if (!isSoundOn()) return;
+    this.scene.sound.play('end_game', { volume: 0.7 });
+  }
 }

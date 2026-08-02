@@ -191,7 +191,7 @@ export default class GameHud {
     g.fillRect(0, railTop, BOARD_WIDTH, 2);
 
     signPanel(scene, 124, BOARD_HEIGHT - 26, 208, 40, { radius: 5 }).setDepth(DEPTH.chrome);
-    signText(scene, 48, BOARD_HEIGHT - 26, 'SCORE', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
+    signText(scene, 58, BOARD_HEIGHT - 26, 'SCORE', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
   }
 
   // Update board number and the points still needed to clear this board.

@@ -69,7 +69,7 @@ export default class GameScene extends Phaser.Scene {
     this.createWalls();
 
     const railStyle = { fontFamily: FONT_HUD, fontSize: '16px', color: CARNIVAL.goldText, fontStyle: 'bold' };
-    this.scoreManager = new ScoreManager(this, 74, BOARD_HEIGHT - 26, this.totalScore, {
+    this.scoreManager = new ScoreManager(this, 84, BOARD_HEIGHT - 26, this.totalScore, {
       style: railStyle,
       label: null,
     });
@@ -610,6 +610,7 @@ export default class GameScene extends Phaser.Scene {
         carryMultiplier: this.carry.carryOver(),
       });
     } else {
+      this.audioFeedback.gameOver();
       this.time.delayedCall(RESULTS.delayMs, () => {
         this.scene.start('ResultsScene', { score: this.scoreManager.score, level: this.level });
       });

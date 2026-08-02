@@ -55,8 +55,8 @@ export default class MenuScene extends Phaser.Scene {
       },
       { fontSize: 24, textShadow: false, letterSpacing: 2, textColor: '#ffffff' }
     );
-    this.createAudioToggles(618);
-    ticketButton(this, BOARD_WIDTH / 2, 665, 200, 34, 'INSTRUCTIONS', () => {
+    this.createAudioToggles(605);
+    ticketButton(this, BOARD_WIDTH / 2, 655, 200, 34, 'INSTRUCTIONS', () => {
       this.sound.play('menu_btn');
       this.showInstructions();
     }, { fontSize: 13, textShadow: false, textColor: '#ffffff' });
@@ -226,13 +226,13 @@ export default class MenuScene extends Phaser.Scene {
     }
 
     modal.add(
-      hudText(this, BOARD_WIDTH / 2, y + 6, `Multiplier caps at ×${CARRY.max}.`, 12)
+      hudText(this, BOARD_WIDTH / 2, y + 4, `Multiplier caps at ×${CARRY.max}.`, 16)
         .setOrigin(0.5)
-        .setColor(CARNIVAL.dimText)
+        .setColor(CARNIVAL.goldText)
     );
 
     modal.add(
-      ticketButton(this, BOARD_WIDTH / 2, cy + panelH / 2 - 40, 150, 40, 'CLOSE', () => {
+      ticketButton(this, BOARD_WIDTH / 2, cy + panelH / 2 - 55, 150, 40, 'CLOSE', () => {
         this.sound.play('menu_btn');
         modal.destroy(true);
       }, { fontSize: 14, textShadow: false, textColor: '#ffffff' })
