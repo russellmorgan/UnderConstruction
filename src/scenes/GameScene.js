@@ -157,6 +157,9 @@ export default class GameScene extends Phaser.Scene {
           carryMultiplier: this.carry.value,
         });
       });
+      this.input.keyboard.on('keydown-R', () => {
+        this.scene.start('ResultsScene', { score: this.scoreManager.score, level: this.level });
+      });
     }
   }
 

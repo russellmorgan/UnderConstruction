@@ -53,10 +53,12 @@ export default class ResultsScene extends Phaser.Scene {
     // See MenuScene's ADMIT ONE handler: Phaser keeps stale scene data when start() is
     // called with no data, so a new run must explicitly reset level/score/boost here too.
     ticketButton(this, BOARD_WIDTH / 2, 500, 220, 54, 'PLAY AGAIN', () =>
-      this.scene.start('GameScene', { level: 1, totalScore: 0, carryMultiplier: CARRY.start })
+      this.scene.start('GameScene', { level: 1, totalScore: 0, carryMultiplier: CARRY.start }),
+      { textColor: CARNIVAL.cream }
     );
     ticketButton(this, BOARD_WIDTH / 2, 578, 180, 44, 'MENU', () => this.scene.start('MenuScene'), {
       fontSize: 17,
+      textColor: CARNIVAL.cream,
     });
 
     signText(this, BOARD_WIDTH / 2, BOARD_HEIGHT - 22, 'thank you kindly', 12, CARNIVAL.cream).setAlpha(0.6);
