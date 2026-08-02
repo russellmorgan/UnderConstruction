@@ -20,7 +20,6 @@ import {
   SESSION,
   JUICE,
   BALL_STALL,
-  PROGRESSION,
   CARRY,
   CARNIVAL,
   NARRATOR,
@@ -29,6 +28,7 @@ import {
 import GameHud, { DEPTH } from '../ui/GameHud.js';
 import { FONT_HUD, FONT_SIGN, lerpColor } from '../ui/carnival.js';
 import { createPegField } from '../systems/PegField.js';
+import { thresholdForLevel } from '../systems/Progression.js';
 import CarryMultiplier from '../systems/CarryMultiplier.js';
 import DropController from '../systems/DropController.js';
 import ScoreManager from '../systems/ScoreManager.js';
@@ -38,12 +38,7 @@ import AudioFeedback from '../systems/AudioFeedback.js';
 import { isMusicOn } from '../systems/AudioSettings.js';
 import { FAIL_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
 
-// Minimum score a player must EARN on a given board (not the running total) to
-// advance to the next board. Grows geometrically so later boards demand more.
-// Per-board earn target: grows geometrically so later boards demand more points to clear.
-export function thresholdForLevel(level) {
-  return Math.round(PROGRESSION.baseThreshold * PROGRESSION.thresholdGrowth ** (level - 1));
-}
+// thresholdForLevel lives in systems/Progression.js — pure, Phaser-free, unit tested.
 
 export default class GameScene extends Phaser.Scene {
   constructor() {
