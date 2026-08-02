@@ -1,10 +1,12 @@
 # CLAUDE.md
 
-A Pachinko/Galton-board browser game ("drop your balls"). See [README.md](README.md) for gameplay rules (scoring zones, carry boost, bonus balls, near misses).
+A Pachinko/Galton-board browser game ("drop your balls") built with Phaser 4 + Matter physics and Vite. See [README.md](README.md) for gameplay rules (scoring zones, carry boost, bonus balls, near misses).
+
+**Read [ARCHITECTURE.md](ARCHITECTURE.md) before investigating or changing code.** It is the file-by-file map: what each scene/system/UI/platform module owns, the scene graph, the full control flow of one drop, a "where to change what" table, and the project conventions. Start there instead of grepping the tree.
+
+**Keep both docs in sync with the code, in the same commit as the change.** Update `ARCHITECTURE.md` when a file is added, split, removed, or takes on a new responsibility, or when the scene graph / drop flow changes. Update `README.md` when gameplay balance, scoring, progression, or controls change — its rules are a plain-English rendering of `src/config/gameConfig.js`. These docs are read *before* the code, so a stale one actively misleads.
 
 ## Testing
-
-A Pachinko/Galton-board style browser game ("drop your balls") built with Phaser 4 + Matter physics and Vite. See [README.md](README.md) for gameplay rules (scoring zones, carry boost, bonus balls, near misses).
 
 `npm test` runs the vitest suite (`src/systems/*.test.js`). No linter or type checker is configured. Systems that depend on Matter physics are hard to observe programmatically — defer those to the user to playtest.
 

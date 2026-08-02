@@ -133,7 +133,7 @@ export const SLOTS = {
 // thresholdForLevel(level) = round(baseThreshold * thresholdGrowth^(level-1))
 export const PROGRESSION = {
   baseThreshold: 20000, // board 1 minimum earned to advance
-  thresholdGrowth: 1.6, // × per board: 8000, 12800, 20480, 32768, ...
+  thresholdGrowth: 1.6, // × per board: 20000, 32000, 51200, 81920, ...
 };
 
 // How long the "BOARD CLEARED" interstitial holds before loading the next board.
