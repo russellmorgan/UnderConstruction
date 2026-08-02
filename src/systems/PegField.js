@@ -191,6 +191,8 @@ export function createPegField(scene) {
     // cap; applyBoost() uses it to taper repeat hits on the same peg this board.
     peg.setData('hits', 0);
     peg.setData('isSpecial', type !== BASE_TYPE);
+    // Drives which coin-collect sample the reward tier plays (AudioFeedback.specialPegHit).
+    peg.setData('scoreMultiplier', type.scoreMultiplier ?? 0);
     if (type.hazard) addHazardTells(scene, peg, x, y);
     else if (type.ring) addRewardGlow(scene, peg, x, y, type);
     pegs.push(peg);

@@ -1,11 +1,23 @@
 // Sound cue dispatcher — mixes pre-recorded samples (peg hits via Phaser sound) with
 // procedural Web Audio oscillator tones (score cues, ball pop). Game logic
 // calls named methods, never touches sound.play() or oscillators directly.
+import { PEG_TYPES } from '../config/gameConfig.js';
 import { isSoundOn } from './AudioSettings.js';
 
 // Sampled plank impacts for the base peg hit — randomized so the same peg never
 // sounds identical twice in a row.
 const PLANK_HIT_KEYS = ['impact_plank_0', 'impact_plank_1', 'impact_plank_2', 'impact_plank_3', 'impact_plank_4'];
+
+// Coin-collect samples for the reward tiers, ordered lowest multiplier first:
+// mult2 -> coin_1 ... mult5 -> coin_4. Derived from PEG_TYPES rather than hardcoded so
+// adding or retuning a tier remaps the audio ladder with it. Exported for BootScene,
+// which must preload exactly these keys.
+export const COIN_HIT_KEYS = PEG_TYPES.filter((t) => t.scoreMultiplier)
+  .sort((a, b) => a.scoreMultiplier - b.scoreMultiplier)
+  .map((t, i) => ({ multiplier: t.scoreMultiplier, key: `coin_${i + 1}`, file: `audio/coins/coin-0${i + 1}.ogg` }));
+
+// Lowest tier's sample, used when a reward peg reports a multiplier outside the ladder.
+const COIN_FALLBACK_KEY = COIN_HIT_KEYS[0]?.key;
 
 // Mix of real sample playback (peg hits) and procedural Web Audio oscillators
 // (score cues) — isolated here so game logic only ever calls
@@ -35,12 +47,13 @@ export default class AudioFeedback {
     this.scene.sound.play(key, { volume: 0.5 });
   }
 
-  // Reward (multiplier) pegs get a brighter, heavier cue than a plain plank hit so
-  // they read as special.
-  // Play a brighter glass impact for reward-tier peg hits.
-  specialPegHit() {
+  // Reward (multiplier) pegs play a coin-collect sample chosen by tier — the higher the
+  // multiplier, the higher up the coin ladder — so the payoff is audible before the
+  // popup is read. Falls back to the lowest tier's sample for an unmapped multiplier.
+  specialPegHit(multiplier) {
     if (!isSoundOn()) return;
-    this.scene.sound.play('impact_glass_heavy', { volume: 0.6 });
+    const key = COIN_HIT_KEYS.find((c) => c.multiplier === multiplier)?.key ?? COIN_FALLBACK_KEY;
+    if (key) this.scene.sound.play(key, { volume: 0.5 });
   }
 
   // Placeholder sample until final SFX are picked — the hazard/dead-ball peg keeps

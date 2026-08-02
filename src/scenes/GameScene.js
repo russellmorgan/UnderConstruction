@@ -308,7 +308,7 @@ export default class GameScene extends Phaser.Scene {
         if (isSpecial) {
           this.showSpecialPegPopup(otherBody.gameObject.x, otherBody.gameObject.y, points, applied);
         }
-        if (isSpecial) this.audioFeedback.specialPegHit();
+        if (isSpecial) this.audioFeedback.specialPegHit(otherBody.gameObject.getData('scoreMultiplier'));
         else this.audioFeedback.pegHit();
         this.cameras.main.shake(JUICE.shake.peg.duration, JUICE.shake.peg.intensity);
         this.flashPeg(otherBody.gameObject);
