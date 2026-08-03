@@ -4,7 +4,20 @@
 // stall detection, and the storage key. Playtest tuning should happen here, not in scene code.
 
 export const BOARD_WIDTH = 480;
-export const BOARD_HEIGHT = 720;
+// 9:16 portrait aspect ratio (the standard mobile/CrazyGames embed shape). Width is
+// left untouched — PEG_FIELD spacing/margins and the peg templates' full-width rows
+// are tuned against it, and shrinking it culls edge pegs off the two mandatory
+// full-width rows, opening a straight vertical drop lane (see PEG_TEMPLATES above).
+// Height is derived instead, so the extra portrait room only adds space below/around
+// existing layout rather than compressing it.
+export const BOARD_HEIGHT = Math.round((BOARD_WIDTH * 16) / 9);
+
+// Phaser Text objects render their glyph canvas at 1x resolution by default (Phaser 4
+// dropped the old game-config-wide text resolution fallback), so on any HiDPI display —
+// or whenever Scale.FIT stretches the board canvas above its logical size — every text
+// object comes out visibly blurry. Capped at 3x so an absurd devicePixelRatio can't blow
+// up glyph-canvas memory for no visible gain.
+export const TEXT_RESOLUTION = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 3) : 1;
 
 export const PHYSICS = {
   gravityY: 1,
@@ -234,6 +247,8 @@ export const JUICE = {
     peg: { duration: 40, intensity: 0.003 },
     score: { duration: 120, intensity: 0.004 }, // multiplied by current multiplier at call time
   },
+  // Bounce pop on the score text whenever a drop lands in a scoring zone.
+  scoreBounce: { duration: 260, scale: 1.35 },
   pegFlash: { duration: 90, tint: 0x7ef7ff },
   particle: {
     baseCount: 16,
@@ -279,7 +294,7 @@ export const JUICE = {
     },
   },
   nearMissMargin: 14, // px from the top-zone boundary that still counts as "so close"
-  bonusFlash: { duration: 150, color: [80, 255, 140] },
+  bonusFlash: { color: [80, 255, 140] },
   bonusParticleCount: 14,
 };
 

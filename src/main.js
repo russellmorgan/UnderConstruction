@@ -17,6 +17,13 @@ const game = new Phaser.Game({
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
+    // BOARD_WIDTH/BOARD_HEIGHT (9:16) is the design resolution FIT scales from — not a
+    // pixel cap. FIT always preserves that aspect ratio, so the canvas grows or shrinks
+    // with the viewport (letterboxed to 9:16) instead of being pinned to 480x853 and
+    // letterboxed at native size. Phaser 4 has no canvas-resolution knob to counter the
+    // resulting CSS upscale on large/HiDPI screens (see TEXT_RESOLUTION above for the
+    // text-specific half of that same tradeoff) — responsive sizing wins over pixel
+    // sharpness here.
     width: BOARD_WIDTH,
     height: BOARD_HEIGHT,
   },

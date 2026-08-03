@@ -30,12 +30,12 @@ export default class BoardClearedScene extends Phaser.Scene {
     bulbString(this, 0, 52, BOARD_WIDTH, 52, 14, 16);
 
     const sign = this.add.container(BOARD_WIDTH / 2, 300);
-    sign.add(signPanel(this, 0, 0, 340, 150, { top: CARNIVAL.gold, bottom: 0xc8891f }));
-    marqueeFrame(this, 0, 0, 314, 124, 26).forEach((b) => sign.add(b));
-    sign.add(signText(this, 0, -34, 'BOARD CLEARED', 26, CARNIVAL.cream));
-    sign.add(signText(this, 0, 6, String(this.totalScore), 30, CARNIVAL.cream));
+    sign.add(signPanel(this, 0, 0, 374, 165, { top: CARNIVAL.gold, bottom: 0xc8891f }));
+    marqueeFrame(this, 0, 0, 345, 136, 29).forEach((b) => sign.add(b));
+    sign.add(signText(this, 0, -37, 'BOARD CLEARED', 29, CARNIVAL.cream));
+    sign.add(signText(this, 0, 7, String(this.totalScore), 33, CARNIVAL.cream));
     const line = Phaser.Utils.Array.GetRandom(BOARD_CLEARED_LINES).replace('{level}', this.level);
-    sign.add(signText(this, 0, 44, line, 13, CARNIVAL.cream));
+    sign.add(signText(this, 0, 48, line, 14, CARNIVAL.cream));
     sign.setScale(0);
     this.tweens.add({
       targets: sign,

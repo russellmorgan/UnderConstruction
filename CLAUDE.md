@@ -28,6 +28,6 @@ Pushes to the `dev` branch auto-deploy to GitHub Pages via [.github/workflows/de
 
 **Tune in config, not in code.** [src/config/gameConfig.js](src/config/gameConfig.js) holds board size, physics bodies, peg field layout, zone values/flags, carry multiplier tuning, juice tuning, bonus ball thresholds, narrator timing, palette (`CARNIVAL`), and the storage key. Playtest tuning happens here, not by editing scene/system code.
 
-**`getActiveAdapter()` in `src/platform/index.js` is the single switch point** for platform backends. Swap the returned adapter there when CrazyGames support is ready, rather than branching elsewhere.
+**`getActiveAdapter()` in `src/platform/index.js` is the single switch point** for platform backends — it returns a memoized `CrazyGamesAdapter`, which falls back to `LocalStorageAdapter` internally whenever the CrazyGames SDK isn't available (local dev, blocked CDN, non-CrazyGames deploy). Loading/gameplay lifecycle signals to the SDK go through `src/platform/crazySdk.js`, not ad hoc `window.CrazyGames` calls.
 
 **GameScene is the orchestrator** — it owns the Matter world and delegates to small single-responsibility systems in `src/systems/`. Keep game logic in those systems rather than in the scene. Visuals are entirely procedural (`src/ui/`) — no image assets; `carnival.js` is the shared kit and `GameHud.js` exports the `DEPTH` bands.

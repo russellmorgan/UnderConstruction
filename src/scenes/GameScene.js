@@ -24,9 +24,10 @@ import {
   CARNIVAL,
   NARRATOR,
   RESULTS,
+  TEXT_RESOLUTION,
 } from '../config/gameConfig.js';
 import GameHud, { DEPTH } from '../ui/GameHud.js';
-import { FONT_HUD, FONT_SIGN, lerpColor, tentBackdrop } from '../ui/carnival.js';
+import { FONT_HUD, FONT_SIGN, lerpColor, tentBackdrop, bounceScale } from '../ui/carnival.js';
 import { createPegField } from '../systems/PegField.js';
 import { thresholdForLevel } from '../systems/Progression.js';
 import CarryMultiplier from '../systems/CarryMultiplier.js';
@@ -36,6 +37,7 @@ import BonusBallManager from '../systems/BonusBallManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
 import AudioFeedback from '../systems/AudioFeedback.js';
 import { isMusicOn } from '../systems/AudioSettings.js';
+import { gameplayStart, gameplayStop } from '../platform/crazySdk.js';
 import { FAIL_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
 
 // thresholdForLevel lives in systems/Progression.js — pure, Phaser-free, unit tested.
@@ -98,6 +100,7 @@ export default class GameScene extends Phaser.Scene {
         fontFamily: FONT_SIGN,
         fontSize: '13px',
         color: CARNIVAL.goldText,
+        resolution: TEXT_RESOLUTION,
       })
       .setOrigin(1, 0.5)
       .setDepth(DEPTH.label);
@@ -119,7 +122,9 @@ export default class GameScene extends Phaser.Scene {
       this.gameMusic = this.sound.add('game_music', { loop: true, volume: 0.2 });
       this.gameMusic.play();
     }
+    gameplayStart();
     this.events.on('resume', () => {
+      gameplayStart();
       if (isMusicOn() && !this.gameMusic?.isPlaying) {
         this.gameMusic = this.sound.add('game_music', { loop: true, volume: 0.2 });
         this.gameMusic.play();
@@ -129,6 +134,7 @@ export default class GameScene extends Phaser.Scene {
       }
     });
     this.events.on('shutdown', () => {
+      gameplayStop();
       if (this.gameMusic) {
         this.gameMusic.stop();
         this.gameMusic = null;
@@ -165,6 +171,7 @@ export default class GameScene extends Phaser.Scene {
 
   // Pause physics/update and launch the PauseScene overlay.
   pauseGame() {
+    gameplayStop();
     this.scene.pause();
     this.scene.launch('PauseScene');
   }
@@ -182,12 +189,13 @@ export default class GameScene extends Phaser.Scene {
     const topValue = Math.max(...zones.map((z) => z.value));
     this.hud.decorateSlots(y);
 
-    zones.forEach(({ value, label }, i) => {
+    zones.forEach(({ value, label: displayLabel }, i) => {
       const x = slotWidth * i + slotWidth / 2;
       // Booth fill warms toward gold with the tier so the prize slots read at a glance.
       const fill = lerpColor(CARNIVAL.nightDeep, CARNIVAL.panelRed, (value / topValue) * 0.85);
       const zone = this.add.rectangle(x, y, slotWidth - 2, height, fill).setStrokeStyle(1, CARNIVAL.wood);
-      this.hud.slotLabel(x, y - 8, label ?? value, value === topValue);
+      const scoreLabel = this.hud.slotLabel(x, y - 8, displayLabel ?? value, value === topValue);
+      zone.setData('scoreLabel', scoreLabel);
 
       this.matter.add.gameObject(zone, {
         isStatic: true,
@@ -317,6 +325,7 @@ export default class GameScene extends Phaser.Scene {
         this.flashPeg(otherBody.gameObject);
       } else if (otherBody.label?.startsWith('slot-')) {
         this.checkNearMiss(ballBody.gameObject.x);
+        bounceScale(this, otherBody.gameObject.getData('scoreLabel'), JUICE.scoreBounce);
         this.resolveDrop(Number(otherBody.label.split('-')[1]));
       } else if (otherBody.label === 'floor') {
         this.resolveDrop(0);
@@ -364,6 +373,7 @@ export default class GameScene extends Phaser.Scene {
         color,
         stroke: CARNIVAL.inkText,
         strokeThickness: Math.max(3, Math.round(fontSize * 0.15)),
+        resolution: TEXT_RESOLUTION,
       })
       .setOrigin(0.5, 1);
 
@@ -378,6 +388,7 @@ export default class GameScene extends Phaser.Scene {
           color: CARNIVAL.goldText,
           stroke: CARNIVAL.inkText,
           strokeThickness: 3,
+          resolution: TEXT_RESOLUTION,
         })
         .setOrigin(0.5, 0);
       container.add(boostText);
@@ -448,6 +459,7 @@ export default class GameScene extends Phaser.Scene {
     if (points > 0) {
       this.spawnScoreBurst(this.currentBall.x, this.currentBall.y, this.carry.value);
       this.cameras.main.shake(JUICE.shake.score.duration, JUICE.shake.score.intensity * this.carry.value);
+      this.scoreManager.bounce();
     }
 
     const bonusCount = this.bonusBalls.evaluateScoreThreshold(
@@ -523,6 +535,7 @@ export default class GameScene extends Phaser.Scene {
         color,
         stroke: CARNIVAL.inkText,
         strokeThickness: Math.max(4, Math.round(fontSize * 0.16)),
+        resolution: TEXT_RESOLUTION,
       })
       .setOrigin(0.5)
       .setDepth(DEPTH.effect)
@@ -572,12 +585,11 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  // Reuses the existing juice-pass hooks (flash, particle burst) tinted green, plus a
+  // Reuses the existing juice-pass hook (particle burst) tinted green, plus a
   // narrator callout, rather than a separate feedback system.
-  // Add extra balls to the session with green flash, particle burst, and narrator callout.
+  // Add extra balls to the session with a green particle burst and narrator callout.
   awardBonusBalls(count, x, y) {
     this.ballsRemaining += count;
-    this.cameras.main.flash(JUICE.bonusFlash.duration, ...JUICE.bonusFlash.color);
     this.scoreParticles.setParticleTint(Phaser.Display.Color.GetColor(...JUICE.bonusFlash.color));
     this.scoreParticles.explode(JUICE.bonusParticleCount * count, x, y);
   }

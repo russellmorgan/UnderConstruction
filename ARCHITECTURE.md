@@ -88,10 +88,20 @@ start silently resumes the previous run's progression.
 
 ### Platform (`src/platform/`)
 `PlatformAdapter.js` is the abstract async interface (`init`, `getHighScore`,
-`setHighScore`, `clearData`). `LocalStorageAdapter.js` is the live implementation and
-swallows all storage errors. `CrazyGamesAdapter.js` is an unwired stub. `index.js`
-exposes `getActiveAdapter()` — **the single switch point**; swap the constructor there
-rather than branching at call sites.
+`setHighScore`, `clearData`). `LocalStorageAdapter.js` is the plain localStorage
+implementation and swallows all storage errors. `crazySdk.js` is the single wrapper
+around the `window.CrazyGames` global (script tag in `index.html`): caches
+`SDK.init()` in `initSdk()`, and exposes guarded `loadingStart`/`loadingStop`,
+`gameplayStart`/`gameplayStop`, and `syncMuteSetting` — every export no-ops (or falls
+back) when the SDK script didn't load, so the game behaves identically off-platform.
+`CrazyGamesAdapter.js` persists the high score through the SDK's `data` module
+(same shape as `localStorage`, synced for logged-in users) and transparently falls
+back to `LocalStorageAdapter` when `initSdk()` resolves false. `index.js` exposes
+`getActiveAdapter()` — **the single switch point**, memoized to one instance so the
+SDK is only initialized once — swap the constructor there rather than branching at
+call sites. `BootScene` calls `loadingStart`/`loadingStop` around asset+font loading
+and `syncMuteSetting`; `GameScene` calls `gameplayStart`/`gameplayStop` on
+create/resume/pause/shutdown.
 
 ## Control flow of one drop
 

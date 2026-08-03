@@ -1,31 +1,51 @@
-// Stub PlatformAdapter for future CrazyGames SDK integration — matches the adapter shape
-// so switching getActiveAdapter() to this class is a one-line config change. Not wired up.
+// PlatformAdapter backed by the CrazyGames SDK's data module (window.CrazyGames.SDK.data),
+// which has the same shape as localStorage but is synced across a logged-in user's
+// devices. Falls back to LocalStorageAdapter when the SDK is unavailable (local dev,
+// blocked CDN, or a non-CrazyGames deploy) so this class is safe to leave as the
+// permanent return value of getActiveAdapter().
 import PlatformAdapter from './PlatformAdapter.js';
+import LocalStorageAdapter from './LocalStorageAdapter.js';
+import { STORAGE_KEY } from '../config/gameConfig.js';
+import { initSdk } from './crazySdk.js';
 
-// Placeholder only — matches PlatformAdapter's shape so switching getActiveAdapter()
-// to this class later is a one-line config change, not a rewrite.
-// Do not wire up real CrazyGames SDK calls from memory; check the current SDK docs
-// (method names, init sequence, data API) at integration time.
 export default class CrazyGamesAdapter extends PlatformAdapter {
-  // TODO: implement against CrazyGames SDK.
+  #fallback = new LocalStorageAdapter();
+  #ready = false;
+
+  // Awaits the shared SDK init (see crazySdk.js). If the SDK is unavailable, transparently
+  // switches every subsequent call to the localStorage fallback instead of failing.
   async init() {
-    // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
+    this.#ready = await initSdk();
+    if (!this.#ready) await this.#fallback.init();
     return true;
   }
 
-  // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
   async getHighScore() {
-    // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
-    return 0;
+    if (!this.#ready) return this.#fallback.getHighScore();
+    try {
+      const raw = window.CrazyGames.SDK.data.getItem(STORAGE_KEY);
+      const value = raw === null || raw === undefined ? 0 : JSON.parse(raw);
+      return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+    } catch {
+      return 0;
+    }
   }
 
-  // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
   async setHighScore(value) {
-    // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
+    if (!this.#ready) return this.#fallback.setHighScore(value);
+    try {
+      window.CrazyGames.SDK.data.setItem(STORAGE_KEY, JSON.stringify(value));
+    } catch {
+      // dataLimitExcedeed / dataModuleDisabled / other — non-critical, fail silently
+    }
   }
 
-  // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
   async clearData() {
-    // TODO: implement against CrazyGames SDK — verify current API surface at integration time, do not assume method names from memory.
+    if (!this.#ready) return this.#fallback.clearData();
+    try {
+      window.CrazyGames.SDK.data.removeItem(STORAGE_KEY);
+    } catch {
+      // storage unavailable — nothing to clear
+    }
   }
 }

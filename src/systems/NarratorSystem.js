@@ -1,7 +1,7 @@
 // Timed on-screen commentary — fires random barker lines at irregular intervals (based on
 // drop count) from two pools (below/above score threshold), auto-clears after 3s.
 import Phaser from 'phaser';
-import { NARRATOR } from '../config/gameConfig.js';
+import { NARRATOR, TEXT_RESOLUTION } from '../config/gameConfig.js';
 import { BELOW_THRESHOLD_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
 
 export default class NarratorSystem {
@@ -17,6 +17,7 @@ export default class NarratorSystem {
       fontSize: '16px',
       color: '#ffe14d',
       wordWrap: { width },
+      resolution: TEXT_RESOLUTION,
       ...opts.style,
     });
     this.hideTimer = null;

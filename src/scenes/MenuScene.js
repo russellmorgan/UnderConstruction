@@ -1,7 +1,7 @@
 // Title/menu screen — tent backdrop, hanging midway sign, high-score stub, barker blurb,
 // START GAME / SOUND / MUSIC buttons, and looping intro music with fade transitions.
 import Phaser from 'phaser';
-import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL, CARRY, PEG_TYPES } from '../config/gameConfig.js';
+import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL, CARRY, PEG_TYPES, TEXT_RESOLUTION } from '../config/gameConfig.js';
 import { getActiveAdapter } from '../platform/index.js';
 import { isSoundOn, isMusicOn, toggleSound, toggleMusic } from '../systems/AudioSettings.js';
 import {
@@ -62,15 +62,20 @@ export default class MenuScene extends Phaser.Scene {
     }, { fontSize: 13, textShadow: false, textColor: '#ffffff' });
     this.playMusic();
 
-    this.add
-      .text(BOARD_WIDTH / 2, BOARD_HEIGHT - 14, '[ reset player data ]', {
-        fontFamily: 'monospace',
-        fontSize: '11px',
-        color: CARNIVAL.dimText,
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerup', () => this.clearPlayerData());
+    // ponytail: import.meta.env.DEV is Vite's build-time flag — false in `npm run build`,
+    // so this dev-only shortcut never ships to real players.
+    if (import.meta.env.DEV) {
+      this.add
+        .text(BOARD_WIDTH / 2, BOARD_HEIGHT - 14, '[ reset player data ]', {
+          fontFamily: 'monospace',
+          fontSize: '11px',
+          color: CARNIVAL.dimText,
+          resolution: TEXT_RESOLUTION,
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerup', () => this.clearPlayerData());
+    }
 
     this.loadHighScore();
   }

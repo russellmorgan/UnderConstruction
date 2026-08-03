@@ -3,7 +3,7 @@
 // frames, sign panels, ticket-stub/toggle buttons, peg texture generators (enamel dome
 // tiers + spiked hazard mine), wood posts, vignette, hanging chains, and sway animations.
 import Phaser from 'phaser';
-import { CARNIVAL } from '../config/gameConfig.js';
+import { CARNIVAL, TEXT_RESOLUTION } from '../config/gameConfig.js';
 
 // Procedural carnival/midway UI kit. No image assets: everything here is Graphics,
 // text and tweens. Shared by every UI surface so the three screens read as one show.
@@ -50,6 +50,7 @@ export function signText(scene, x, y, label, size, color = CARNIVAL.goldText, ex
       color,
       stroke: CARNIVAL.inkText,
       strokeThickness: Math.max(2, Math.round(size * 0.14)),
+      resolution: TEXT_RESOLUTION,
       ...extra,
     })
     .setOrigin(0.5)
@@ -62,6 +63,7 @@ export function hudText(scene, x, y, label, size = 13, color = CARNIVAL.cream) {
     fontFamily: FONT_HUD,
     fontSize: `${size}px`,
     color,
+    resolution: TEXT_RESOLUTION,
   });
 }
 
@@ -322,6 +324,25 @@ export function sway(scene, target, degrees = CARNIVAL.swayDegrees) {
     yoyo: true,
     repeat: -1,
     ease: 'Sine.easeInOut',
+  });
+}
+
+// One-shot scale pop: grow to `scale` then settle back to 1x, smoothly eased both ways.
+// Used for score/slot feedback on a landing. Pauses (rather than kills) any tween
+// already running on the target — e.g. the top-zone label's permanent idle pulse —
+// and resumes it once the pop completes, so a one-shot effect can't strand a repeating
+// tween mid-cycle.
+export function bounceScale(scene, target, { scale = 1.35, duration = 260 } = {}) {
+  const running = scene.tweens.getTweensOf(target).filter((t) => t.isPlaying());
+  running.forEach((t) => t.pause());
+  target.setScale(1);
+  scene.tweens.add({
+    targets: target,
+    scale,
+    duration: duration / 2,
+    ease: 'Sine.easeInOut',
+    yoyo: true,
+    onComplete: () => running.forEach((t) => t.resume()),
   });
 }
 
