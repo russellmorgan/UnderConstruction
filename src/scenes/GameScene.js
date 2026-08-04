@@ -65,7 +65,7 @@ export default class GameScene extends Phaser.Scene {
 
     tentBackdrop(this, BOARD_WIDTH, BOARD_HEIGHT).setDepth(-1);
     createPegField(this);
-    this.hud = new GameHud(this);
+    this.hud = new GameHud(this, () => this.pauseGame());
     this.createSlots();
     this.createFloor();
     this.createWalls();
@@ -124,6 +124,7 @@ export default class GameScene extends Phaser.Scene {
     }
     gameplayStart();
     this.events.on('resume', () => {
+      this.hud.setPaused(false);
       gameplayStart();
       if (isMusicOn() && !this.gameMusic?.isPlaying) {
         this.gameMusic = this.sound.add('game_music', { loop: true, volume: 0.2 });
@@ -169,9 +170,11 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
-  // Pause physics/update and launch the PauseScene overlay.
+  // Pause physics/update and launch the PauseScene overlay. The header button glyph
+  // flips to "play" while paused and back on resume.
   pauseGame() {
     gameplayStop();
+    this.hud.setPaused(true);
     this.scene.pause();
     this.scene.launch('PauseScene');
   }

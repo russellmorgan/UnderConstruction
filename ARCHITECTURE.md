@@ -39,7 +39,7 @@ graph LR
   Game -->|earned < target| Results[ResultsScene]
   Results --> Game
   Results --> Menu
-  Game -.launch on Esc.-> Pause[PauseScene]
+  Game -.launch on Esc / header button.-> Pause[PauseScene]
   Pause -.resume.-> Game
 ```
 
@@ -84,7 +84,7 @@ start silently resumes the previous run's progression.
 | File | Owns |
 | --- | --- |
 | `carnival.js` | The shared procedural kit: `signText`/`hudText`, `tentBackdrop`, `valance`, `bulbString`, `marqueeFrame`, `signPanel`, `ticketButton`, `checkbox` (plain box+tick — the audio settings in `MenuScene`/`PauseScene`), `sway`, `chains`, `woodPost`, `vignette`, `gradientRect`, `lerpColor`/`shade`, and the two peg texture generators (`makePegTexture`, `makeHazardPegTexture`, supersampled — stamp with `PEG_TEXTURE_SCALE`). Also the font constants. |
-| `GameHud.js` | GameScene chrome only, no gameplay state: backdrop/vignette/posts, header plaques (`updateBoard`, `updateBalls`), hanging barker sign (`setBarkerVisible`, `setBarkerBelowThreshold`, `attachBarkerText`), slot booth framing (`decorateSlots`, `slotLabel`), bottom rail. Exports `DEPTH = { chrome 5, label 6, effect 15, ball 20 }`; play field stays at 0, backdrop negative. |
+| `GameHud.js` | GameScene chrome only, no gameplay state: backdrop/vignette/posts, header board plaque (`updateBoard`) plus the top-right play/pause roundel (`createPauseButton`, `setPaused`; click fires the `onTogglePause` callback passed by `GameScene`), hanging barker sign (`setBarkerVisible`, `setBarkerBelowThreshold`, `attachBarkerText`), slot booth framing (`decorateSlots`, `slotLabel`), bottom rail (score left / balls right-aligned inside the same 280px plaque via `updateBalls`, BOOST on bare wood to its right). Exports `DEPTH = { chrome 5, label 6, effect 15, ball 20 }`; play field stays at 0, backdrop negative. |
 
 ### Platform (`src/platform/`)
 `PlatformAdapter.js` is the abstract async interface (`init`, `getHighScore`,

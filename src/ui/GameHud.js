@@ -3,13 +3,13 @@
 // state. Exports DEPTH bands: backdrop negative, play field 0, chrome 5-6, effects 15, ball 20.
 import { BOARD_WIDTH, BOARD_HEIGHT, CARNIVAL, SLOTS } from '../config/gameConfig.js';
 import {
+  FONT_HUD,
   bulbString,
   chains,
   gradientRect,
   lerpColor,
   signPanel,
   signText,
-  sway,
   valance,
   vignette,
   woodPost,
@@ -20,13 +20,25 @@ import {
 // always readable while it falls past the top signage.
 export const DEPTH = { chrome: 5, label: 6, effect: 15, ball: 20 };
 
+// Play/pause glyph paths, centred on the origin. Fill style is the caller's.
+function paintGlyph(g, paused) {
+  if (paused) {
+    g.fillTriangle(-6, -10, -6, 10, 11, 0);
+  } else {
+    g.fillRoundedRect(-9, -10, 6, 20, 2);
+    g.fillRoundedRect(3, -10, 6, 20, 2);
+  }
+}
+
 // HUD chrome for GameScene: a midway header, a hanging barker sign, prize-booth
 // framing around the scoring slots, and a wooden scorekeeper's rail at the bottom.
 // Purely presentational — it owns no gameplay state.
 export default class GameHud {
   // Build all HUD chrome: backdrop, header, barker sign, and bottom rail.
-  constructor(scene) {
+  // `onTogglePause` is invoked by the header's play/pause button.
+  constructor(scene, onTogglePause = () => {}) {
     this.scene = scene;
+    this.onTogglePause = onTogglePause;
     this.createFieldBackdrop();
     this.createHeader();
     this.createBarkerSign();
@@ -66,7 +78,7 @@ export default class GameHud {
     woodPost(posts, BOARD_WIDTH - 12, 0, 12, BOARD_HEIGHT);
   }
 
-  // Top chrome: valance, bulb string, board/target plaque on the left, ball count plaque on the right.
+  // Top chrome: valance, bulb string, board/target plaque on the left, play/pause button on the right.
   createHeader() {
     const { scene } = this;
     valance(scene, 0, BOARD_WIDTH, 14, 24).setDepth(DEPTH.chrome);
@@ -77,12 +89,54 @@ export default class GameHud {
     this.boardText = signText(scene, 86, 23, '', 12, CARNIVAL.cream).setDepth(DEPTH.label);
     this.targetText = signText(scene, 86, 37, '', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
 
-    signPanel(scene, BOARD_WIDTH - 86, 30, 132, 54, plaque).setDepth(DEPTH.chrome);
-    this.ballsText = signText(scene, BOARD_WIDTH - 86, 30, '', 16, CARNIVAL.goldText).setDepth(DEPTH.label);
+    signPanel(scene, BOARD_WIDTH - 46, 30, 64, 54, plaque).setDepth(DEPTH.chrome);
+    this.createPauseButton(BOARD_WIDTH - 46, 30);
+  }
+
+  // Bare cream glyph sitting straight on the top-right plaque — the plaque is the frame,
+  // so the button draws no chrome of its own. Drawn, not textured, so it stays crisp at
+  // any DPR and swaps between pause bars and a play triangle in place. Hit area is still
+  // the full plaque-sized square, not just the painted pixels.
+  //
+  // Fills MUST use the numeric palette entries (canvasCream/goldLight) — CARNIVAL.cream
+  // is a CSS string for text styles and Graphics.fillStyle renders it black.
+  createPauseButton(x, y) {
+    const { scene } = this;
+    const r = 17;
+    this.paused = false;
+
+    const g = scene.add.graphics();
+    const button = scene.add.container(x, y, [g]).setDepth(DEPTH.label);
+
+    const draw = (hot) => {
+      g.clear();
+      g.fillStyle(hot ? CARNIVAL.goldLight : CARNIVAL.canvasCream, 1);
+      paintGlyph(g, this.paused);
+    };
+
+    draw(false);
+    button.setSize(r * 2, r * 2).setInteractive({ useHandCursor: true });
+    button.on('pointerover', () => draw(true));
+    button.on('pointerout', () => draw(false));
+    button.on('pointerdown', () => button.setY(y + 2));
+    button.on('pointerup', () => {
+      button.setY(y);
+      this.onTogglePause();
+    });
+
+    this.pauseButton = button;
+    this.redrawPauseButton = draw;
+  }
+
+  // Swap the button glyph between pause bars (running) and a play triangle (paused).
+  setPaused(paused) {
+    this.paused = paused;
+    this.redrawPauseButton(false);
   }
 
   // The narrator gets a hanging midway signboard rather than a dialogue box: chains
   // from the light string, painted board, and it only drops in when the barker talks.
+  // Deliberately static — the idle sway made the line hard to read.
   // Hanging barker signboard: chains from the light string, painted panel, hidden until narrator speaks.
   createBarkerSign() {
     const { scene } = this;
@@ -94,7 +148,6 @@ export default class GameHud {
     this.barker.add(this.barkerPanel);
     this.barkerLabel = signText(scene, 0, -20, 'THE BARKER SAYS', 13, CARNIVAL.goldText);
     this.barker.add(this.barkerLabel);
-    sway(scene, this.barker, 0.9);
   }
 
   // Recolor the barker sign panel: solid panelRedDark when below threshold,
@@ -179,9 +232,10 @@ export default class GameHud {
     return label;
   }
 
-  // Scorekeeper's rail across the bottom: score on the left plaque, carry boost on the
-  // right, all on weathered wood.
-  // Wooden scorekeeper's rail at the bottom with a plaque for the running score.
+  // Scorekeeper's rail across the bottom, both readouts inside one plaque and laid out
+  // the same way — painted signText caption, then the live number in the HUD face:
+  // SCORE reads left-to-right from x 58, BALLS mirrors it right-aligned at x 288.
+  // The carry boost sits out on the bare wood to the right of the plaque.
   createBottomRail() {
     const { scene } = this;
     const railTop = BOARD_HEIGHT - 52;
@@ -190,8 +244,19 @@ export default class GameHud {
     g.fillStyle(CARNIVAL.gold, 0.55);
     g.fillRect(0, railTop, BOARD_WIDTH, 2);
 
-    signPanel(scene, 124, BOARD_HEIGHT - 26, 208, 40, { radius: 5 }).setDepth(DEPTH.chrome);
+    signPanel(scene, 160, BOARD_HEIGHT - 26, 280, 40, { radius: 5 }).setDepth(DEPTH.chrome);
     signText(scene, 58, BOARD_HEIGHT - 26, 'SCORE', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
+    signText(scene, 244, BOARD_HEIGHT - 26, 'BALLS', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
+
+    this.ballsText = scene.add
+      .text(288, BOARD_HEIGHT - 26, '', {
+        fontFamily: FONT_HUD,
+        fontSize: '16px',
+        color: CARNIVAL.goldText,
+        fontStyle: 'bold',
+      })
+      .setOrigin(1, 0.5)
+      .setDepth(DEPTH.label);
   }
 
   // Update board number and the points still needed to clear this board.
@@ -200,8 +265,8 @@ export default class GameHud {
     this.targetText.setText(`EARN ${Math.max(0, Math.ceil(remaining))}`);
   }
 
-  // Update the remaining ball count display.
+  // Update the remaining ball count (the painted BALLS caption is static chrome).
   updateBalls(count) {
-    this.ballsText.setText(`BALLS ${count}`);
+    this.ballsText.setText(`${count}`);
   }
 }
