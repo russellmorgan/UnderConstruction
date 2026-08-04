@@ -2,7 +2,7 @@
 
 A Pachinko/Galton-board browser game ("drop your balls") built with Phaser 4 + Matter physics and Vite. See [README.md](README.md) for gameplay rules (scoring zones, carry boost, bonus balls, near misses).
 
-**Read [ARCHITECTURE.md](ARCHITECTURE.md) before investigating or changing code.** It is the file-by-file map: what each scene/system/UI/platform module owns, the scene graph, the full control flow of one drop, a "where to change what" table, and the project conventions. Start there instead of grepping the tree.
+**Read [ARCHITECTURE.md](ARCHITECTURE.md) before investigating or changing code.** It is the file-by-file map: what each scene/system/UI/platform module owns, the scene graph, the full control flow of one drop, a "where to change what" table, and the project conventions. Start there instead of grepping the tree. [CRAZYGAMES.md](CRAZYGAMES.md) tracks the CrazyGames submission specifically — platform-integration history and the Full Launch checklist.
 
 **Keep both docs in sync with the code, in the same commit as the change.** Update `ARCHITECTURE.md` when a file is added, split, removed, or takes on a new responsibility, or when the scene graph / drop flow changes. Update `README.md` when gameplay balance, scoring, progression, or controls change — its rules are a plain-English rendering of `src/config/gameConfig.js`. These docs are read *before* the code, so a stale one actively misleads.
 
@@ -16,7 +16,7 @@ Standard Vite scripts (`dev`/`build`/`preview`), plus `npm run test` (vitest, un
 
 ## Deployment
 
-Pushes to the `dev` branch auto-deploy to GitHub Pages via [.github/workflows/deploy.yml](.github/workflows/deploy.yml). `vite.config.js` sets `base: '/UnderConstruction/'` to match the Pages path — keep this in sync if the repo is renamed.
+Pushes to the `dev` branch auto-deploy to GitHub Pages via [.github/workflows/deploy.yml](.github/workflows/deploy.yml). `vite.config.js` sets `base: './'` (relative) so the same `dist/` build works unmodified on GitHub Pages, CrazyGames, or any other static host/subpath — an absolute base (e.g. `/UnderConstruction/`) broke CrazyGames (assets 404'd, blank canvas, SDK calls never fired). Don't reintroduce an absolute base.
 
 ## Gotchas and rationale
 

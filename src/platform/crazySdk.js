@@ -51,3 +51,27 @@ export async function syncMuteSetting(soundManager) {
     soundManager.mute = Boolean(settings.muteAudio);
   });
 }
+
+// Requests a midgame video ad ("user died, a level has been completed, etc." per
+// CrazyGames docs). Always resolves — on adFinished, on adError (unfilled, adblock,
+// on cooldown, or disabled during Basic Launch), or immediately off-platform — so
+// callers never hang waiting for an ad that isn't going to show. onStart/onEnd only
+// fire around a real ad and are where the caller should pause gameplay/mute audio.
+export function requestMidgameAd({ onStart, onEnd } = {}) {
+  return new Promise((resolve) => {
+    initSdk().then((ready) => {
+      if (!ready) return resolve();
+      window.CrazyGames.SDK.ad.requestAd('midgame', {
+        adStarted: () => onStart?.(),
+        adError: () => {
+          onEnd?.();
+          resolve();
+        },
+        adFinished: () => {
+          onEnd?.();
+          resolve();
+        },
+      });
+    });
+  });
+}
