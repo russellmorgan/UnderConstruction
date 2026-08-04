@@ -96,7 +96,7 @@ export default class GameScene extends Phaser.Scene {
     this.updateBoardText();
 
     this.carryText = this.add
-      .text(BOARD_WIDTH - 12, BOARD_HEIGHT - 26, '', {
+      .text(BOARD_WIDTH - 12, BOARD_HEIGHT - 22, '', {
         fontFamily: FONT_SIGN,
         fontSize: '13px',
         color: CARNIVAL.goldText,
