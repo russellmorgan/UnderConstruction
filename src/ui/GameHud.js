@@ -246,10 +246,10 @@ export default class GameHud {
 
     signPanel(scene, 160, BOARD_HEIGHT - 26, 280, 40, { radius: 5 }).setDepth(DEPTH.chrome);
     signText(scene, 58, BOARD_HEIGHT - 26, 'SCORE', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
-    signText(scene, 244, BOARD_HEIGHT - 26, 'BALLS', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
+    signText(scene, 224, BOARD_HEIGHT - 26, 'BALLS LEFT', 11, CARNIVAL.goldText).setDepth(DEPTH.label);
 
     this.ballsText = scene.add
-      .text(288, BOARD_HEIGHT - 26, '', {
+      .text(282, BOARD_HEIGHT - 26, '', {
         fontFamily: FONT_HUD,
         fontSize: '16px',
         color: CARNIVAL.goldText,
