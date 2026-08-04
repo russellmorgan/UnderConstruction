@@ -33,11 +33,10 @@ export default class PauseScene extends Phaser.Scene {
       notchColor: 0x0b0710,
       textColor: CARNIVAL.cream,
     });
-    ticketButton(this, BOARD_WIDTH / 2, centerY + 92, 170, 42, 'MENU', () => {
+    ticketButton(this, BOARD_WIDTH / 2, centerY + 92, 200, 50, 'MENU', () => {
       this.sound.play('menu_btn');
       this.goToMenu();
     }, {
-      fontSize: 17,
       notchColor: 0x0b0710,
       textColor: CARNIVAL.cream,
     });
