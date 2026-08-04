@@ -104,6 +104,9 @@ export default class DropController {
   // Confirm the drop at the current x position. Used by pointer and keyboard (space) triggers.
   handleRelease(pointer) {
     if (!this.enabled) return;
+    // A tap that lands on interactive HUD chrome (e.g. the pause button) is that
+    // object's to consume — never treat it as a drop confirmation.
+    if (pointer && this.scene.input.hitTestPointer(pointer).length > 0) return;
     if (pointer && !this.timed) {
       this.x = this.clamp(pointer.x);
       this.indicator.x = this.x;
