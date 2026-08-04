@@ -26,6 +26,7 @@ src/
 public/audio         wav/ogg/mp3 SFX + music, preloaded by BootScene
 public/fonts         Rye (signs) + Work Sans (HUD), loaded before first render
 scripts/             offline dev helpers, not part of the game bundle
+jsconfig.json        editor tooling only — scopes the TS language server to src/
 ```
 
 ## Scene graph
@@ -153,6 +154,12 @@ create/resume/pause/shutdown.
   red or black, so "avoid this" stays unambiguous.
 - **`import.meta.env.DEV` guards the debug keys** in GameScene (`S` barker sign, `B`
   board-cleared jump) — they are stripped from production builds.
+- **`jsconfig.json` must keep listing `src`.** Without it the TypeScript language server
+  treats each file as its own island and reports only 1 reference for a symbol used in
+  9 places, so editor renames drop callsites silently. Keep `compilerOptions` minimal:
+  Vite *does* read some of them, and `target: esnext` silently flips
+  `useDefineForClassFields` to true, changing class-field semantics (see the `#private`
+  fields in `CrazyGamesAdapter.js`). `checkJs` stays off too — this is untyped Phaser.
 - **Docs are part of the change.** This file describes the code's structure;
   [README.md](README.md) describes the gameplay rules in plain English and is a direct
   rendering of `gameConfig.js`. Update ARCHITECTURE.md whenever a file is added, split,
