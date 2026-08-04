@@ -384,7 +384,7 @@ export default class GameScene extends Phaser.Scene {
 
     if (boost > 0) {
       const boostText = this.add
-        .text(0, 3, `BOOST +${boost.toFixed(1)}x`, {
+        .text(0, 3, `BOOST +${boost.toFixed(2)}x`, {
           fontFamily: FONT_HUD,
           fontSize: '13px',
           fontStyle: 'bold',
@@ -609,7 +609,7 @@ export default class GameScene extends Phaser.Scene {
 
   // Sync the carry-multiplier display.
   updateCarryText() {
-    this.carryText.setText(`BOOST ${this.carry.value.toFixed(1)}x`);
+    this.carryText.setText(`BOOST ${this.carry.value.toFixed(2)}x`);
   }
 
   // Out of balls: advance to a new (randomly-shaped) board if this board's earnings
