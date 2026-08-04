@@ -28,10 +28,10 @@ export const PHYSICS = {
 };
 
 export const PEG_FIELD = {
-  rows: 8,
+  rows: 10,
   spacingX: 40,
   spacingY: 40,
-  topMargin: 140,
+  topMargin: 180, // one full spacingY below the old 140 — centers the 10-row field between the header rail and the slots
   sideMargin: 30,
   jitter: 3, // max random px offset applied to each peg's x/y so templates don't look pixel-identical on repeat
 };
@@ -54,29 +54,30 @@ export const TIMED_DROP = {
 // placing pegs, so uneven row lengths/stagger no longer bias the field toward one side
 // — templates don't need to be hand-balanced left-to-right to render centered.
 // Every template must keep at least two full-width 'XXXXXXXXXXX' rows at different
-// depths (rows 2 and 6 by convention). Without them, funnel/pyramid shapes leave an
-// empty column on each edge and the ball can fall from the drop line straight into a
-// slot without touching a single peg — the one outcome the board must never allow.
+// depths (rows 2 and 7 by convention in the 10-row field). Without them, funnel/pyramid
+// shapes leave an empty column on each edge and the ball can fall from the drop line
+// straight into a slot without touching a single peg — the one outcome the board must
+// never allow.
 export const PEG_TEMPLATES = [
   {
     id: 'full',
-    rows: Array(8).fill('XXXXXXXXXXX'),
+    rows: Array(10).fill('XXXXXXXXXXX'),
   },
   {
     id: 'diamond',
-    rows: ['....XXX...', '...XXXXX..', 'XXXXXXXXXXX', '.XXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', 'XXXXXXXXXXX', '....XXX...'],
+    rows: ['....XXX...', '...XXXXX..', 'XXXXXXXXXXX', '.XXXXXXXXX', '.XXXXXXXXX', '.XXXXXXXXX', '..XXXXXXX.', 'XXXXXXXXXXX', '...XXXXX..', '....XXX...'],
   },
   {
     id: 'hourglass',
-    rows: ['XXXXXXXXXXX', '.XXXXXXXXX', 'XXXXXXXXXXX', '...XXXXX..', '...XXXXX..', '..XXXXXXX.', 'XXXXXXXXXXX', '.XXXXXXXXX'],
+    rows: ['XXXXXXXXXXX', '.XXXXXXXXX', 'XXXXXXXXXXX', '...XXXXX..', '...XXXXX..', '...XXXXX..', '..XXXXXXX.', 'XXXXXXXXXXX', '.XXXXXXXXX', 'XXXXXXXXXXX'],
   },
   {
     id: 'pyramid',
-    rows: ['...XXXXX..', '....XXXX..', 'XXXXXXXXXXX', '...XXXXXX..', '..XXXXXXX.', '..XXXXXXX.', 'XXXXXXXXXXX', '.XXXXXXXXX'],
+    rows: ['...XXXXX..', '....XXXX..', 'XXXXXXXXXXX', '...XXXXXX..', '..XXXXXXX.', '..XXXXXXX.', '.XXXXXXXXX', 'XXXXXXXXXXX', '.XXXXXXXXX', '.XXXXXXXXX'],
   },
   {
     id: 'zigzag',
-    rows: ['.XXXXXX.X.', '..XX.XXX.X.', 'XXXXXXXXXXX', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', 'XXXXXXXXXXX', '...XXXXXX.'],
+    rows: ['.XXXXXX.X.', '..XX.XXX.X.', 'XXXXXXXXXXX', '...XXXXXX.', '....XXXXXX', '.....XXXXXX', '....XXXXXX', 'XXXXXXXXXXX', '...XXXXXX.', '..XX.XXX.X.'],
   },
   {
     id: 'checkerboard',
@@ -87,25 +88,27 @@ export const PEG_TEMPLATES = [
       '.X.X.X.X.XX',
       'X.X.X.X.XX',
       '.X.X.X.X.XX',
+      'X.X.X.X.XX',
       'XXXXXXXXXXX',
       '.X.X.X.X.XX',
+      'X.X.X.X.XX',
     ],
   },
   {
     id: 'chevron',
-    rows: ['XXXX.X.XXXX', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'XX.XXXXX.XX', 'X.XX.X.XX.X', 'XX.XXXXX.XX', 'XXXXXXXXXXX', 'XXX.XXX.XXX'],
+    rows: ['XXXX.X.XXXX', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'XX.XXXXX.XX', 'X.XX.X.XX.X', 'XX.XXXXX.XX', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'XXX.XXX.XXX', 'XXXX.X.XXXX'],
   },
   {
     id: 'lattice',
-    rows: ['XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXXXX.XXXXX', 'X.XXX.XXX.X', 'XXXXXXXXXXX', 'XXX.XXX.XXX', 'XX.XXXXX.XX'],
+    rows: ['XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXXXX.XXXXX', 'X.XXX.XXX.X', 'XXXXXXXXXXX', 'XXX.XXX.XXX', 'XX.XXXXX.XX', 'X.XXX.XXX.X', 'XXX.XXX.XXX'],
   },
   {
     id: 'ribs',
-    rows: ['XXXXXXXXXXX', 'X.X.XXX.X.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XX.XXXXX.XX', 'XXXX.X.XXXX', 'XXXXXXXXXXX'],
+    rows: ['XXXXXXXXXXX', 'X.X.XXX.X.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XX.XXXXX.XX', 'XXXX.X.XXXX', 'XXXXXXXXXXX', 'X.X.XXX.X.X', 'XXX.XXX.XXX'],
   },
   {
     id: 'honeycomb',
-    rows: ['XX.XXX.XXXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXX.XXX.XXX', 'XX.XXXXX.XX'],
+    rows: ['XX.XXX.XXXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', 'X.XXX.XXX.X', 'XXX.XXX.XXX', 'XX.XXXXX.XX', 'X.XXX.XXX.X', 'XXX.XXX.XXX'],
   },
 ];
 
