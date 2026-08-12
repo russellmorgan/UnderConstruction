@@ -1,9 +1,7 @@
-// First scene: preloads all audio assets (using BASE_URL for the correct path), forces
-// webfont loading before any text renders, syncs the CrazyGames muteAudio setting, then
-// hands off to MenuScene.
+// First scene: preloads all audio assets (using BASE_URL for the correct path) and
+// forces webfont loading before any text renders, then hands off to MenuScene.
 import Phaser from 'phaser';
 import { COIN_HIT_KEYS } from '../systems/AudioFeedback.js';
-import { loadingStart, loadingStop, syncMuteSetting } from '../platform/crazySdk.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -12,7 +10,6 @@ export default class BootScene extends Phaser.Scene {
 
   // Load all audio assets using BASE_URL for the correct asset path.
   preload() {
-    loadingStart();
     this.load.setBaseURL(import.meta.env.BASE_URL);
     this.load.audio('hit_hurt', 'audio/hit_hurt.ogg');
     this.load.audio('laser_shoot', 'audio/woosh-ball-drop.ogg');
@@ -32,16 +29,14 @@ export default class BootScene extends Phaser.Scene {
     this.load.audio('end_game', 'audio/end-game.ogg');
   }
 
-  // Force webfont loading and sync mute setting before transitioning to the menu.
+  // Force webfont loading before transitioning to the menu.
   async create() {
     // Canvas text silently falls back if the font isn't downloaded yet, so force
     // both webfonts to load before the first scene renders any text with them.
     await Promise.allSettled([
       document.fonts.load('400 16px "Rye"'),
       document.fonts.load('700 16px "Work Sans"'),
-      syncMuteSetting(this.sound),
     ]);
-    loadingStop();
     this.scene.start('MenuScene');
   }
 }

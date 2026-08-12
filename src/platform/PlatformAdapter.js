@@ -1,6 +1,6 @@
 // Abstract platform adapter interface — defines the async shape (init, getHighScore,
 // setHighScore, clearData) that all adapters implement so callers never depend on a
-// specific backend (localStorage vs Crazy Games cloud).
+// specific persistence backend.
 export default class PlatformAdapter {
   // Initialise the platform backend (e.g. connect to SDK, verify availability). Returns true on success.
   async init() {

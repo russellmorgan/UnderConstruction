@@ -4,7 +4,7 @@
 // stall detection, and the storage key. Playtest tuning should happen here, not in scene code.
 
 export const BOARD_WIDTH = 480;
-// 9:16 portrait aspect ratio (the standard mobile/CrazyGames embed shape). Width is
+// 9:16 portrait aspect ratio (the standard mobile embed shape). Width is
 // left untouched — PEG_FIELD spacing/margins and the peg templates' full-width rows
 // are tuned against it, and shrinking it culls edge pegs off the two mandatory
 // full-width rows, opening a straight vertical drop lane (see PEG_TEMPLATES above).

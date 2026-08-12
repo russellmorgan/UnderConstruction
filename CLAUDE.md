@@ -2,7 +2,7 @@
 
 A Pachinko/Galton-board browser game ("drop your balls") built with Phaser 4 + Matter physics and Vite. See [README.md](README.md) for gameplay rules (scoring zones, carry boost, bonus balls, near misses).
 
-**Read [ARCHITECTURE.md](ARCHITECTURE.md) before investigating or changing code.** It is the file-by-file map: what each scene/system/UI/platform module owns, the scene graph, the full control flow of one drop, a "where to change what" table, and the project conventions. Start there instead of grepping the tree. [CRAZYGAMES.md](CRAZYGAMES.md) tracks the CrazyGames submission specifically — platform-integration history and the Full Launch checklist.
+**Read [ARCHITECTURE.md](ARCHITECTURE.md) before investigating or changing code.** It is the file-by-file map: what each scene/system/UI/platform module owns, the scene graph, the full control flow of one drop, a "where to change what" table, and the project conventions. Start there instead of grepping the tree.
 
 **Keep both docs in sync with the code, in the same commit as the change.** Update `ARCHITECTURE.md` when a file is added, split, removed, or takes on a new responsibility, or when the scene graph / drop flow changes. Update `README.md` when gameplay balance, scoring, progression, or controls change — its rules are a plain-English rendering of `src/config/gameConfig.js`. These docs are read *before* the code, so a stale one actively misleads.
 
@@ -16,7 +16,7 @@ Standard Vite scripts (`dev`/`build`/`preview`), plus `npm run test` (vitest, un
 
 ## Deployment
 
-Pushes to the `dev` branch auto-deploy to GitHub Pages via [.github/workflows/deploy.yml](.github/workflows/deploy.yml). `vite.config.js` sets `base: './'` (relative) so the same `dist/` build works unmodified on GitHub Pages, CrazyGames, or any other static host/subpath — an absolute base (e.g. `/UnderConstruction/`) broke CrazyGames (assets 404'd, blank canvas, SDK calls never fired). Don't reintroduce an absolute base.
+Pushes to the `dev` branch auto-deploy to GitHub Pages via [.github/workflows/deploy.yml](.github/workflows/deploy.yml). `vite.config.js` sets `base: './'` (relative) so the same `dist/` build works unmodified on GitHub Pages or any other static host/subpath. Don't introduce an absolute base.
 
 ## Gotchas and rationale
 
@@ -28,6 +28,6 @@ Pushes to the `dev` branch auto-deploy to GitHub Pages via [.github/workflows/de
 
 **Tune in config, not in code.** [src/config/gameConfig.js](src/config/gameConfig.js) holds board size, physics bodies, peg field layout, zone values/flags, carry multiplier tuning, juice tuning, bonus ball thresholds, narrator timing, palette (`CARNIVAL`), and the storage key. Playtest tuning happens here, not by editing scene/system code.
 
-**`getActiveAdapter()` in `src/platform/index.js` is the single switch point** for platform backends — it returns a memoized `CrazyGamesAdapter`, which falls back to `LocalStorageAdapter` internally whenever the CrazyGames SDK isn't available (local dev, blocked CDN, non-CrazyGames deploy). Loading/gameplay lifecycle signals to the SDK go through `src/platform/crazySdk.js`, not ad hoc `window.CrazyGames` calls.
+**`getActiveAdapter()` in `src/platform/index.js` is the single switch point** for persistence backends — it returns a memoized `LocalStorageAdapter`. High scores persist locally in the browser; swap the constructor there if a cloud backend is ever added.
 
 **GameScene is the orchestrator** — it owns the Matter world and delegates to small single-responsibility systems in `src/systems/`. Keep game logic in those systems rather than in the scene. Visuals are entirely procedural (`src/ui/`) — no image assets; `carnival.js` is the shared kit and `GameHud.js` exports the `DEPTH` bands.

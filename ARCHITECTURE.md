@@ -90,19 +90,9 @@ start silently resumes the previous run's progression.
 ### Platform (`src/platform/`)
 `PlatformAdapter.js` is the abstract async interface (`init`, `getHighScore`,
 `setHighScore`, `clearData`). `LocalStorageAdapter.js` is the plain localStorage
-implementation and swallows all storage errors. `crazySdk.js` is the single wrapper
-around the `window.CrazyGames` global (script tag in `index.html`): caches
-`SDK.init()` in `initSdk()`, and exposes guarded `loadingStart`/`loadingStop`,
-`gameplayStart`/`gameplayStop`, and `syncMuteSetting` — every export no-ops (or falls
-back) when the SDK script didn't load, so the game behaves identically off-platform.
-`CrazyGamesAdapter.js` persists the high score through the SDK's `data` module
-(same shape as `localStorage`, synced for logged-in users) and transparently falls
-back to `LocalStorageAdapter` when `initSdk()` resolves false. `index.js` exposes
-`getActiveAdapter()` — **the single switch point**, memoized to one instance so the
-SDK is only initialized once — swap the constructor there rather than branching at
-call sites. `BootScene` calls `loadingStart`/`loadingStop` around asset+font loading
-and `syncMuteSetting`; `GameScene` calls `gameplayStart`/`gameplayStop` on
-create/resume/pause/shutdown.
+implementation and swallows all storage errors. `index.js` exposes
+`getActiveAdapter()` — the single switch point, memoized to one instance — swap the
+constructor there if a different persistence backend is ever added.
 
 ## Control flow of one drop
 
@@ -158,8 +148,8 @@ create/resume/pause/shutdown.
   treats each file as its own island and reports only 1 reference for a symbol used in
   9 places, so editor renames drop callsites silently. Keep `compilerOptions` minimal:
   Vite *does* read some of them, and `target: esnext` silently flips
-  `useDefineForClassFields` to true, changing class-field semantics (see the `#private`
-  fields in `CrazyGamesAdapter.js`). `checkJs` stays off too — this is untyped Phaser.
+  `useDefineForClassFields` to true, changing class-field semantics for `#private`
+  fields. `checkJs` stays off too — this is untyped Phaser.
 - **Docs are part of the change.** This file describes the code's structure;
   [README.md](README.md) describes the gameplay rules in plain English and is a direct
   rendering of `gameConfig.js`. Update ARCHITECTURE.md whenever a file is added, split,

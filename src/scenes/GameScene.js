@@ -37,7 +37,6 @@ import BonusBallManager from '../systems/BonusBallManager.js';
 import NarratorSystem from '../systems/NarratorSystem.js';
 import AudioFeedback from '../systems/AudioFeedback.js';
 import { isMusicOn } from '../systems/AudioSettings.js';
-import { gameplayStart, gameplayStop, requestMidgameAd } from '../platform/crazySdk.js';
 import { FAIL_LINES, ABOVE_THRESHOLD_LINES } from '../data/narratorLines.js';
 
 // thresholdForLevel lives in systems/Progression.js — pure, Phaser-free, unit tested.
@@ -122,10 +121,8 @@ export default class GameScene extends Phaser.Scene {
       this.gameMusic = this.sound.add('game_music', { loop: true, volume: 0.2 });
       this.gameMusic.play();
     }
-    gameplayStart();
     this.events.on('resume', () => {
       this.hud.setPaused(false);
-      gameplayStart();
       if (isMusicOn() && !this.gameMusic?.isPlaying) {
         this.gameMusic = this.sound.add('game_music', { loop: true, volume: 0.2 });
         this.gameMusic.play();
@@ -135,7 +132,6 @@ export default class GameScene extends Phaser.Scene {
       }
     });
     this.events.on('shutdown', () => {
-      gameplayStop();
       if (this.gameMusic) {
         this.gameMusic.stop();
         this.gameMusic = null;
@@ -173,7 +169,6 @@ export default class GameScene extends Phaser.Scene {
   // Pause physics/update and launch the PauseScene overlay. The header button glyph
   // flips to "play" while paused and back on resume.
   pauseGame() {
-    gameplayStop();
     this.hud.setPaused(true);
     this.scene.pause();
     this.scene.launch('PauseScene');
@@ -621,30 +616,17 @@ export default class GameScene extends Phaser.Scene {
     this.dropController.setEnabled(false);
     const earned = this.scoreManager.score - this.boardStartScore;
 
-    requestMidgameAd({
-      onStart: () => {
-        gameplayStop();
-        this._preAdMute = this.sound.mute;
-        this.sound.mute = true;
-        this.scene.pause();
-      },
-      onEnd: () => {
-        this.scene.resume();
-        this.sound.mute = this._preAdMute;
-      },
-    }).then(() => {
-      if (earned >= this.boardTarget) {
-        this.scene.start('BoardClearedScene', {
-          level: this.level,
-          totalScore: this.scoreManager.score,
-          carryMultiplier: this.carry.carryOver(),
-        });
-      } else {
-        this.audioFeedback.gameOver();
-        this.time.delayedCall(RESULTS.delayMs, () => {
-          this.scene.start('ResultsScene', { score: this.scoreManager.score, level: this.level });
-        });
-      }
-    });
+    if (earned >= this.boardTarget) {
+      this.scene.start('BoardClearedScene', {
+        level: this.level,
+        totalScore: this.scoreManager.score,
+        carryMultiplier: this.carry.carryOver(),
+      });
+    } else {
+      this.audioFeedback.gameOver();
+      this.time.delayedCall(RESULTS.delayMs, () => {
+        this.scene.start('ResultsScene', { score: this.scoreManager.score, level: this.level });
+      });
+    }
   }
 }

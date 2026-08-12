@@ -39,8 +39,7 @@ Guardrails:
 8. **Ship v1 / measure activity** — this is the actual checkpoint. Decide in advance what "activity" needs to show to be worth continuing investment (traffic source, session count, whatever the real bar is).
 9. ✅ **Scoring persistence** — high score stored across sessions via a swappable platform adapter (`getActiveAdapter()`), not hardcoded storage calls in game logic.
 10. ✅ **Scene flow** — real Phaser scenes: MenuScene (title, high score, start) → GameScene (unchanged MVP gameplay) → ResultsScene (final score, high-score check/persist, replay/menu).
-11. ✅ **CrazyGames adapter stub** — `CrazyGamesAdapter` matches the `PlatformAdapter` interface with TODO-marked method bodies; flipping `getActiveAdapter()` to it is the only change needed once the real SDK is wired up.
-12. ✅ **Scale Manager** — Phaser Scale Manager configured in FIT mode with auto-centering, for responsive embed sizing ahead of CrazyGames distribution.
+11. ✅ **Scale Manager** — Phaser Scale Manager configured in FIT mode with auto-centering, for responsive embed sizing.
 
 ## Explicitly deferred / cut for v1
 
